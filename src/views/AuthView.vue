@@ -3,11 +3,26 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LoginForm from '../components/auth/LoginForm.vue'
 import RegisterForm from '../components/auth/RegisterForm.vue'
+import { loginUser, registerUser, saveAuthSession } from '../services/auth.service'
 
 const router = useRouter()
 const isRegister = ref(false)
 
-function onAuthSuccess() {
+async function onLogin(payload) {
+  const { accessToken, user } = await loginUser(payload)
+  if (!accessToken) {
+    throw new Error('Token manquant')
+  }
+  saveAuthSession(accessToken, user)
+  router.push('/')
+}
+
+async function onRegister(payload) {
+  const { accessToken, user } = await registerUser(payload)
+  if (!accessToken) {
+    throw new Error('Token manquant')
+  }
+  saveAuthSession(accessToken, user)
   router.push('/')
 }
 </script>
@@ -64,12 +79,12 @@ function onAuthSuccess() {
             <LoginForm
               v-if="!isRegister"
               @switch-to-register="isRegister = true"
-              @success="onAuthSuccess"
+              @success="onLogin"
             />
             <RegisterForm
               v-else
               @switch-to-login="isRegister = false"
-              @success="onAuthSuccess"
+              @success="onRegister"
             />
           </div>
         </div>

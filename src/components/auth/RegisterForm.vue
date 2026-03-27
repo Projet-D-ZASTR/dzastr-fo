@@ -11,13 +11,27 @@ const form = reactive({
 })
 
 const showPassword = ref(false)
+const isSubmitting = ref(false)
+const errorMessage = ref('')
 
-function submitRegister() {
+async function submitRegister() {
   if (!form.fullName || !form.email || !form.password) {
     return
   }
-
-  emit('success')
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  errorMessage.value = ''
+  try {
+    await emit('success', {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      password: form.password,
+    })
+  } catch (error) {
+    errorMessage.value = error?.message || "Inscription impossible"
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -107,7 +121,17 @@ function submitRegister() {
         </div>
       </div>
 
-      <button type="submit" class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base">Get started</button>
+      <p v-if="errorMessage" class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="submit"
+        class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base"
+        :disabled="isSubmitting"
+      >
+        {{ isSubmitting ? 'Creation...' : 'Get started' }}
+      </button>
 
       <button
         type="button"
