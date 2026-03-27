@@ -1,5 +1,5 @@
 # dzastr-fo
-
+ 
 Frontend application for the D-ZASTR project, built with Vue 3, Vite, and DaisyUI.
 
 ## Project Overview
