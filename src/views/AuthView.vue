@@ -7,23 +7,54 @@ import { loginUser, registerUser, saveAuthSession } from '../services/auth.servi
 
 const router = useRouter()
 const isRegister = ref(false)
+const loginError = ref('')
+const registerError = ref('')
+const loginSubmitting = ref(false)
+const registerSubmitting = ref(false)
+
+function mapAuthError(error) {
+  const message = String(error?.message || '')
+  if (message.includes('Failed to fetch') || message.includes('Load failed')) {
+    return 'Connexion au serveur impossible. Verifie VITE_AUTH_API_URL et que le backend tourne.'
+  }
+  if (message.includes('Forbidden')) {
+    return 'Token de service invalide ou manquant (x-service-token).'
+  }
+  return message || 'Une erreur est survenue.'
+}
 
 async function onLogin(payload) {
-  const { accessToken, user } = await loginUser(payload)
-  if (!accessToken) {
-    throw new Error('Token manquant')
+  loginError.value = ''
+  loginSubmitting.value = true
+  try {
+    const { accessToken, user } = await loginUser(payload)
+    if (!accessToken) {
+      throw new Error('Token manquant')
+    }
+    saveAuthSession(accessToken, user)
+    router.push('/')
+  } catch (error) {
+    loginError.value = mapAuthError(error)
+  } finally {
+    loginSubmitting.value = false
   }
-  saveAuthSession(accessToken, user)
-  router.push('/')
 }
 
 async function onRegister(payload) {
-  const { accessToken, user } = await registerUser(payload)
-  if (!accessToken) {
-    throw new Error('Token manquant')
+  registerError.value = ''
+  registerSubmitting.value = true
+  try {
+    const { accessToken, user } = await registerUser(payload)
+    if (!accessToken) {
+      throw new Error('Token manquant')
+    }
+    saveAuthSession(accessToken, user)
+    router.push('/')
+  } catch (error) {
+    registerError.value = mapAuthError(error)
+  } finally {
+    registerSubmitting.value = false
   }
-  saveAuthSession(accessToken, user)
-  router.push('/')
 }
 </script>
 
@@ -78,11 +109,15 @@ async function onRegister(payload) {
           <div class="mx-auto w-full max-w-md">
             <LoginForm
               v-if="!isRegister"
+              :server-error="loginError"
+              :submitting="loginSubmitting"
               @switch-to-register="isRegister = true"
               @success="onLogin"
             />
             <RegisterForm
               v-else
+              :server-error="registerError"
+              :submitting="registerSubmitting"
               @switch-to-login="isRegister = false"
               @success="onRegister"
             />

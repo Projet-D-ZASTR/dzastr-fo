@@ -2,6 +2,16 @@
 import { reactive, ref } from 'vue'
 import AuthFormMark from './AuthFormMark.vue'
 
+defineProps({
+  serverError: {
+    type: String,
+    default: '',
+  submitting: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const emit = defineEmits(['success', 'switch-to-register'])
 
 const form = reactive({
@@ -10,26 +20,15 @@ const form = reactive({
 })
 
 const showPassword = ref(false)
-const isSubmitting = ref(false)
-const errorMessage = ref('')
 
-async function submitLogin() {
+function submitLogin() {
   if (!form.email || !form.password) {
     return
   }
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  errorMessage.value = ''
-  try {
-    await emit('success', {
-      email: form.email.trim(),
-      password: form.password,
-    })
-  } catch (error) {
-    errorMessage.value = error?.message || 'Connexion impossible'
-  } finally {
-    isSubmitting.value = false
-  }
+  emit('success', {
+    email: form.email.trim(),
+    password: form.password,
+  })
 }
 </script>
 
@@ -104,16 +103,16 @@ async function submitLogin() {
         </div>
       </div>
 
-      <p v-if="errorMessage" class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
-        {{ errorMessage }}
+      <p v-if="serverError" class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+        {{ serverError }}
       </p>
 
       <button
         type="submit"
         class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base"
-        :disabled="isSubmitting"
+        :disabled="submitting"
       >
-        {{ isSubmitting ? 'Connexion...' : 'Sign in' }}
+        {{ submitting ? 'Connexion...' : 'Sign in' }}
       </button>
 
       <button
