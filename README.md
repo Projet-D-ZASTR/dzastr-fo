@@ -3,7 +3,6 @@
 Application frontend de gestion clients, services et factures, construite avec Vue 3 + Vite + DaisyUI.
 
 ![Logo D-ZASTR SVG](public/img/D-Zastre.svg)
-![Logo D-ZASTR PNG](public/img/D-Zastre.png)
 
 ## Assets
 
