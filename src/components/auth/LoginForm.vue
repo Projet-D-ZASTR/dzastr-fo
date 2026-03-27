@@ -6,6 +6,7 @@ defineProps({
   serverError: {
     type: String,
     default: '',
+  },
   submitting: {
     type: Boolean,
     default: false,
