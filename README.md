@@ -1,32 +1,158 @@
 # dzastr-fo
 
-# UI Theme Setup
+Frontend application for the D-ZASTR project, built with Vue 3, Vite, and DaisyUI.
 
-Ce projet utilise **DaisyUI** avec un thème personnalisé nommé **D-ZASTR**.
+## Project Overview
 
-## Stack UI
+This repository contains the frontend of the application.
 
-- **Tailwind CSS**
-- **DaisyUI**
-- **Thème custom** : `D-ZASTR`
+The frontend is designed as a single-page application with a simple workflow:
 
-## Thème utilisé
+- authentication screen
+- main dashboard after login
+- client management
+- service creation
+- invoice creation
+- PDF generation through the backend
 
-Le thème `D-ZASTR` est déclaré via le plugin DaisyUI avec une configuration personnalisée basée sur des couleurs **OKLCH**.
+The goal is to keep the interface clean, fast, and easy to use.
 
-### Caractéristiques
+## Frontend Stack
 
-- Mode clair
-- Palette personnalisée
-- Coins arrondis doux
-- Style propre et moderne
-- Variables de couleur centralisées
+- Vue 3
+- Vite
+- Vue Router
+- Tailwind CSS
+- DaisyUI
+- ESLint
+- Prettier
+- Vitest
 
-## Configuration
+## Functional Scope
 
-Le thème suivant est utilisé dans le projet :
+### Authentication
 
-```css
+The application starts with an authentication interface.
+
+Planned features:
+
+- login form
+- register form
+- access to the main dashboard after successful authentication
+
+### Main Dashboard
+
+After authentication, the user accesses a mono-page dashboard with:
+
+- a navigation bar
+- a button to create a service
+- a client management area
+- invoice creation actions
+
+### Client Management
+
+The dashboard includes a client table with the ability to:
+
+- add a client
+- edit a client
+- delete a client
+- create an invoice for a client
+
+### Service Management
+
+A button in the navbar opens a modal to create a new service.
+
+A service contains at least:
+
+- title
+- hourly rate
+
+### Invoice Management
+
+From the client table, the user can open a dedicated invoice component to:
+
+- select one or more services
+- generate invoice lines
+- calculate totals
+- prepare PDF export
+
+### PDF Generation
+
+The frontend will interact with the backend to:
+
+- generate a PDF invoice
+- allow document download
+
+## Planned UI Structure
+
+### Authentication View
+
+A dedicated authentication page with:
+
+- LoginForm
+- RegisterForm
+
+### Dashboard View
+
+A single main page containing:
+
+- AppNavbar
+- ClientTable
+- ClientModal
+- PrestationModal
+- FactureModal or InvoiceBuilder
+
+## Planned Project Structure
+
+src/
+  assets/
+  components/
+    auth/
+      LoginForm.vue
+      RegisterForm.vue
+    navbar/
+      AppNavbar.vue
+    client/
+      ClientTable.vue
+      ClientModal.vue
+    prestation/
+      PrestationModal.vue
+    facture/
+      FactureModal.vue
+    ui/
+      BaseModal.vue
+  router/
+    index.js
+  views/
+    MainView.vue
+  App.vue
+  main.js
+  style.css
+
+## UI Theme Setup
+
+This project uses DaisyUI with a custom theme named D-ZASTR.
+
+## UI Stack
+
+- Tailwind CSS
+- DaisyUI
+- Custom theme: D-ZASTR
+
+## Theme Used
+
+The D-ZASTR theme is declared through the DaisyUI plugin with a custom configuration based on OKLCH colors.
+
+### Features
+
+- light mode
+- custom palette
+- soft rounded corners
+- clean and modern look
+- centralized color variables
+
+## Theme Configuration
+
 @plugin "daisyui/theme" {
   name: "D-ZASTR";
   default: false;
