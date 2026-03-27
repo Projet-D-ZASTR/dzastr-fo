@@ -104,6 +104,7 @@ A single main page containing:
 
 ## Planned Project Structure
 
+```text
 src/
   assets/
   components/
@@ -128,6 +129,7 @@ src/
   App.vue
   main.js
   style.css
+```
 
 ## UI Theme Setup
 
@@ -153,6 +155,7 @@ The D-ZASTR theme is declared through the DaisyUI plugin with a custom configura
 
 ## Theme Configuration
 
+```css
 @plugin "daisyui/theme" {
   name: "D-ZASTR";
   default: false;
@@ -187,3 +190,4 @@ The D-ZASTR theme is declared through the DaisyUI plugin with a custom configura
   --depth: 1;
   --noise: 0;
 }
+```
