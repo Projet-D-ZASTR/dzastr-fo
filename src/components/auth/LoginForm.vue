@@ -2,6 +2,17 @@
 import { reactive, ref } from 'vue'
 import AuthFormMark from './AuthFormMark.vue'
 
+defineProps({
+  serverError: {
+    type: String,
+    default: '',
+  },
+  submitting: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const emit = defineEmits(['success', 'switch-to-register'])
 
 const form = reactive({
@@ -15,8 +26,10 @@ function submitLogin() {
   if (!form.email || !form.password) {
     return
   }
-
-  emit('success')
+  emit('success', {
+    email: form.email.trim(),
+    password: form.password,
+  })
 }
 </script>
 
@@ -91,7 +104,17 @@ function submitLogin() {
         </div>
       </div>
 
-      <button type="submit" class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base">Sign in</button>
+      <p v-if="serverError" class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+        {{ serverError }}
+      </p>
+
+      <button
+        type="submit"
+        class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base"
+        :disabled="submitting"
+      >
+        {{ submitting ? 'Connexion...' : 'Sign in' }}
+      </button>
 
       <button
         type="button"
