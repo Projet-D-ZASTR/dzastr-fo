@@ -60,10 +60,10 @@ function validateForm() {
 
 function mapBackendError(message) {
   const text = String(message || '')
-  if (text.includes('User_Email')) return "Cet email est invalide ou deja utilise."
+  if (text.includes('User_Email')) return 'Cet email est invalide ou deja utilise.'
   if (text.includes('User_Password')) return 'Le mot de passe ne respecte pas les regles minimales.'
   if (text.includes('User_Username')) return "Le nom d'utilisateur est invalide."
-  return text || "Inscription impossible pour le moment."
+  return text || 'Inscription impossible pour le moment.'
 }
 
 function submitRegister() {
@@ -82,9 +82,12 @@ function submitRegister() {
   <div class="w-full text-left">
     <AuthFormMark />
 
-    <h1 class="text-2xl font-semibold tracking-tight text-base-content sm:text-3xl">Create an account</h1>
+    <h1 class="text-2xl font-semibold tracking-tight text-base-content sm:text-3xl">
+      Create an account
+    </h1>
     <p class="mt-2 max-w-md text-sm leading-relaxed text-base-content/65">
-      Access your tasks, notes, and projects anytime, anywhere — and keep everything flowing in one place.
+      Access your tasks, notes, and projects anytime, anywhere — and keep everything flowing in one
+      place.
     </p>
 
     <form class="mt-8 space-y-5" @submit.prevent="submitRegister">
@@ -145,7 +148,13 @@ function submitRegister() {
             aria-label="Show or hide password"
             @click="showPassword = !showPassword"
           >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.75"
+            >
               <path
                 v-if="!showPassword"
                 stroke-linecap="round"

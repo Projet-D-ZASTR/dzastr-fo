@@ -79,7 +79,13 @@ function submitLogin() {
             aria-label="Show or hide password"
             @click="showPassword = !showPassword"
           >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.75"
+            >
               <path
                 v-if="!showPassword"
                 stroke-linecap="round"
@@ -104,7 +110,10 @@ function submitLogin() {
         </div>
       </div>
 
-      <p v-if="serverError" class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+      <p
+        v-if="serverError"
+        class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      >
         {{ serverError }}
       </p>
 

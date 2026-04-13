@@ -3,8 +3,12 @@ const year = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="footer mt-auto border-t border-secondary/30 bg-secondary px-4 py-6 text-secondary-content sm:px-6">
-    <div class="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+  <footer
+    class="footer mt-auto border-t border-secondary/30 bg-secondary px-4 py-6 text-secondary-content sm:px-6"
+  >
+    <div
+      class="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4"
+    >
       <p class="text-left text-sm font-medium">
         <span class="font-semibold text-secondary-content">D-ZASTR</span>
         <span class="mx-1.5 text-secondary-content/55">·</span>

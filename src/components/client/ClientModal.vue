@@ -28,7 +28,7 @@ watch(
     form.email = value?.email || ''
     form.company = value?.company || ''
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 function submitClient() {
@@ -84,7 +84,11 @@ function submitClient() {
       </label>
 
       <div class="modal-action mt-1 flex items-center justify-end gap-2">
-        <button type="button" class="btn btn-ghost btn-sm" @click="$emit('update:modelValue', false)">
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          @click="$emit('update:modelValue', false)"
+        >
           Annuler
         </button>
         <button type="submit" class="btn btn-secondary btn-sm">

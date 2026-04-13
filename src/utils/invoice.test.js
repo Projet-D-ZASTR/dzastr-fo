@@ -3,10 +3,7 @@ import { buildClientInvoiceMeta, computeInvoiceTotals, getInvoiceStatusLabel } f
 
 describe('invoice utils', () => {
   it('compute totals with TVA for standard regime', () => {
-    const lines = [
-      { total: 100 },
-      { total: 59.5 },
-    ]
+    const lines = [{ total: 100 }, { total: 59.5 }]
     expect(computeInvoiceTotals(lines, false)).toEqual({
       ht: 159.5,
       tva: 31.9,
