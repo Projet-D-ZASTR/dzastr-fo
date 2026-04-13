@@ -99,30 +99,174 @@ const currentUser = ref({
 })
 
 const clients = ref([
-  { id: 'c1', name: 'Alice Martin', email: 'alice@acme.fr', company: 'Acme', invoiceStatus: 'payee' },
-  { id: 'c2', name: 'Paul Durant', email: 'paul@globex.fr', company: 'Globex', invoiceStatus: 'envoyee' },
-  { id: 'c3', name: 'Sophie Bernard', email: 'sophie@initech.fr', company: 'Initech', invoiceStatus: 'brouillon' },
-  { id: 'c4', name: 'Lucas Moreau', email: 'lucas@hooli.fr', company: 'Hooli', invoiceStatus: null },
-  { id: 'c5', name: 'Camille Petit', email: 'camille@stark.fr', company: 'Stark Industries', invoiceStatus: 'annulee' },
-  { id: 'c6', name: 'Nora Garcia', email: 'nora@wayne.fr', company: 'Wayne Enterprises', invoiceStatus: null },
-  { id: 'c7', name: 'Hugo Laurent', email: 'hugo@umbrella.fr', company: 'Umbrella', invoiceStatus: null },
-  { id: 'c8', name: 'Emma Robert', email: 'emma@wonka.fr', company: 'Wonka', invoiceStatus: 'envoyee' },
-  { id: 'c9', name: 'Yanis Lefevre', email: 'yanis@cyberdyne.fr', company: 'Cyberdyne', invoiceStatus: null },
-  { id: 'c10', name: 'Lea Fontaine', email: 'lea@soylent.fr', company: 'Soylent', invoiceStatus: null },
-  { id: 'c11', name: 'Tom Renaud', email: 'tom@vehement.fr', company: 'Vehement Capital', invoiceStatus: 'payee' },
-  { id: 'c12', name: 'Ines Dupuis', email: 'ines@bluth.fr', company: 'Bluth Company', invoiceStatus: null },
-  { id: 'c13', name: 'Noah Marchand', email: 'noah@massive.fr', company: 'Massive Dynamic', invoiceStatus: null },
-  { id: 'c14', name: 'Mila Caron', email: 'mila@oscorp.fr', company: 'Oscorp', invoiceStatus: 'envoyee' },
-  { id: 'c15', name: 'Louis Perrin', email: 'louis@vought.fr', company: 'Vought', invoiceStatus: null },
-  { id: 'c16', name: 'Jade Mercier', email: 'jade@aptive.fr', company: 'Aptive', invoiceStatus: 'brouillon' },
-  { id: 'c17', name: 'Ethan Colin', email: 'ethan@nakatomi.fr', company: 'Nakatomi Trading', invoiceStatus: null },
-  { id: 'c18', name: 'Manon Giraud', email: 'manon@momcorp.fr', company: 'MomCorp', invoiceStatus: 'payee' },
-  { id: 'c19', name: 'Adam Roux', email: 'adam@octan.fr', company: 'Octan Corp', invoiceStatus: null },
-  { id: 'c20', name: 'Sarah Lambert', email: 'sarah@lexcorp.fr', company: 'LexCorp', invoiceStatus: 'annulee' },
-  { id: 'c21', name: 'Leo Schmitt', email: 'leo@blackmesa.fr', company: 'Black Mesa', invoiceStatus: null },
-  { id: 'c22', name: 'Chloe Leclerc', email: 'chloe@capsule.fr', company: 'Capsule Corp', invoiceStatus: null },
-  { id: 'c23', name: 'Mathis Faure', email: 'mathis@planet.fr', company: 'Planet Express', invoiceStatus: 'envoyee' },
-  { id: 'c24', name: 'Zoé Vidal', email: 'zoe@monarch.fr', company: 'Monarch Solutions', invoiceStatus: null },
+  {
+    id: 'c1',
+    name: 'Alice Martin',
+    email: 'alice@acme.fr',
+    company: 'Acme',
+    invoiceStatus: 'payee',
+  },
+  {
+    id: 'c2',
+    name: 'Paul Durant',
+    email: 'paul@globex.fr',
+    company: 'Globex',
+    invoiceStatus: 'envoyee',
+  },
+  {
+    id: 'c3',
+    name: 'Sophie Bernard',
+    email: 'sophie@initech.fr',
+    company: 'Initech',
+    invoiceStatus: 'brouillon',
+  },
+  {
+    id: 'c4',
+    name: 'Lucas Moreau',
+    email: 'lucas@hooli.fr',
+    company: 'Hooli',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c5',
+    name: 'Camille Petit',
+    email: 'camille@stark.fr',
+    company: 'Stark Industries',
+    invoiceStatus: 'annulee',
+  },
+  {
+    id: 'c6',
+    name: 'Nora Garcia',
+    email: 'nora@wayne.fr',
+    company: 'Wayne Enterprises',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c7',
+    name: 'Hugo Laurent',
+    email: 'hugo@umbrella.fr',
+    company: 'Umbrella',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c8',
+    name: 'Emma Robert',
+    email: 'emma@wonka.fr',
+    company: 'Wonka',
+    invoiceStatus: 'envoyee',
+  },
+  {
+    id: 'c9',
+    name: 'Yanis Lefevre',
+    email: 'yanis@cyberdyne.fr',
+    company: 'Cyberdyne',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c10',
+    name: 'Lea Fontaine',
+    email: 'lea@soylent.fr',
+    company: 'Soylent',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c11',
+    name: 'Tom Renaud',
+    email: 'tom@vehement.fr',
+    company: 'Vehement Capital',
+    invoiceStatus: 'payee',
+  },
+  {
+    id: 'c12',
+    name: 'Ines Dupuis',
+    email: 'ines@bluth.fr',
+    company: 'Bluth Company',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c13',
+    name: 'Noah Marchand',
+    email: 'noah@massive.fr',
+    company: 'Massive Dynamic',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c14',
+    name: 'Mila Caron',
+    email: 'mila@oscorp.fr',
+    company: 'Oscorp',
+    invoiceStatus: 'envoyee',
+  },
+  {
+    id: 'c15',
+    name: 'Louis Perrin',
+    email: 'louis@vought.fr',
+    company: 'Vought',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c16',
+    name: 'Jade Mercier',
+    email: 'jade@aptive.fr',
+    company: 'Aptive',
+    invoiceStatus: 'brouillon',
+  },
+  {
+    id: 'c17',
+    name: 'Ethan Colin',
+    email: 'ethan@nakatomi.fr',
+    company: 'Nakatomi Trading',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c18',
+    name: 'Manon Giraud',
+    email: 'manon@momcorp.fr',
+    company: 'MomCorp',
+    invoiceStatus: 'payee',
+  },
+  {
+    id: 'c19',
+    name: 'Adam Roux',
+    email: 'adam@octan.fr',
+    company: 'Octan Corp',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c20',
+    name: 'Sarah Lambert',
+    email: 'sarah@lexcorp.fr',
+    company: 'LexCorp',
+    invoiceStatus: 'annulee',
+  },
+  {
+    id: 'c21',
+    name: 'Leo Schmitt',
+    email: 'leo@blackmesa.fr',
+    company: 'Black Mesa',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c22',
+    name: 'Chloe Leclerc',
+    email: 'chloe@capsule.fr',
+    company: 'Capsule Corp',
+    invoiceStatus: null,
+  },
+  {
+    id: 'c23',
+    name: 'Mathis Faure',
+    email: 'mathis@planet.fr',
+    company: 'Planet Express',
+    invoiceStatus: 'envoyee',
+  },
+  {
+    id: 'c24',
+    name: 'Zoé Vidal',
+    email: 'zoe@monarch.fr',
+    company: 'Monarch Solutions',
+    invoiceStatus: null,
+  },
 ])
 
 const services = ref([
@@ -130,8 +274,8 @@ const services = ref([
   { id: 's2', title: 'Frontend Dev', hourlyRate: 120 },
 ])
 
-const selectedClient = computed(() =>
-  clients.value.find((client) => client.id === selectedClientId.value) ?? null,
+const selectedClient = computed(
+  () => clients.value.find((client) => client.id === selectedClientId.value) ?? null
 )
 
 const selectedClientInvoices = computed(() => {
@@ -139,8 +283,9 @@ const selectedClientInvoices = computed(() => {
   return invoicesByClient.value[selectedClientId.value] ?? []
 })
 
-const selectedInvoice = computed(() =>
-  selectedClientInvoices.value.find((invoice) => invoice.id === selectedInvoiceId.value) ?? null,
+const selectedInvoice = computed(
+  () =>
+    selectedClientInvoices.value.find((invoice) => invoice.id === selectedInvoiceId.value) ?? null
 )
 
 const clientsWithInvoiceMeta = computed(() =>
@@ -150,7 +295,7 @@ const clientsWithInvoiceMeta = computed(() =>
       ...client,
       ...buildClientInvoiceMeta(invoices),
     }
-  }),
+  })
 )
 
 function openCreateClient() {
@@ -165,7 +310,9 @@ function openEditClient(client) {
 
 function saveClient(payload) {
   if (payload.id) {
-    clients.value = clients.value.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
+    clients.value = clients.value.map((item) =>
+      item.id === payload.id ? { ...item, ...payload } : item
+    )
     return
   }
 
@@ -236,11 +383,23 @@ function updateInvoiceStatus({ clientId, invoiceId, status }) {
   const invoices = invoicesByClient.value[clientId] ?? []
   invoicesByClient.value = {
     ...invoicesByClient.value,
-    [clientId]: invoices.map((invoice) => (invoice.id === invoiceId ? { ...invoice, status } : invoice)),
+    [clientId]: invoices.map((invoice) =>
+      invoice.id === invoiceId ? { ...invoice, status } : invoice
+    ),
   }
 }
 
-function saveInvoice({ clientId, invoiceId, status, lines, total, ht, tva, ttc, isAutoEntrepreneur }) {
+function saveInvoice({
+  clientId,
+  invoiceId,
+  status,
+  lines,
+  total,
+  ht,
+  tva,
+  ttc,
+  isAutoEntrepreneur,
+}) {
   const invoices = invoicesByClient.value[clientId] ?? []
   invoicesByClient.value = {
     ...invoicesByClient.value,
@@ -258,7 +417,7 @@ function saveInvoice({ clientId, invoiceId, status, lines, total, ht, tva, ttc, 
             isDraft: false,
             updatedAt: new Date().toISOString(),
           }
-        : invoice,
+        : invoice
     ),
   }
   selectedInvoiceId.value = invoiceId
@@ -267,12 +426,15 @@ function saveInvoice({ clientId, invoiceId, status, lines, total, ht, tva, ttc, 
 function downloadInvoicePdf(clientId) {
   const client = clients.value.find((item) => item.id === clientId)
   const invoices = invoicesByClient.value[clientId] ?? []
-  const invoice = invoices.find((item) => item.id === selectedInvoiceId.value) ?? invoices[invoices.length - 1]
+  const invoice =
+    invoices.find((item) => item.id === selectedInvoiceId.value) ?? invoices[invoices.length - 1]
   if (!client || !invoice) return
 
   const formatDate = (value) => new Date(value).toLocaleDateString('fr-FR')
   const formatAmount = (value) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0)
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+      Number(value) || 0
+    )
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -315,7 +477,7 @@ function downloadInvoicePdf(clientId) {
   doc.text(
     invoice.isAutoEntrepreneur ? 'Regime: Auto-entrepreneur (TVA 0%)' : 'Regime: TVA 20%',
     110,
-    y,
+    y
   )
   y += 8
 
@@ -387,10 +549,7 @@ function logout() {
           @view-invoices="viewInvoices"
         />
 
-        <aside
-          v-if="selectedClient"
-          class="w-full shrink-0 xl:h-full xl:w-[min(30rem,100%)]"
-        >
+        <aside v-if="selectedClient" class="w-full shrink-0 xl:h-full xl:w-[min(30rem,100%)]">
           <FacturePanel
             :client="selectedClient"
             :services="services"

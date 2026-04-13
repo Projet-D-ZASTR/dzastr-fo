@@ -66,9 +66,15 @@ function submitService() {
           required
         />
       </label>
-      <p class="text-xs text-base-content/55">Utilise une virgule ou un point pour les décimales.</p>
+      <p class="text-xs text-base-content/55">
+        Utilise une virgule ou un point pour les décimales.
+      </p>
       <div class="modal-action mt-1 flex items-center justify-end gap-2">
-        <button type="button" class="btn btn-ghost btn-sm" @click="$emit('update:modelValue', false)">
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          @click="$emit('update:modelValue', false)"
+        >
           Annuler
         </button>
         <button type="submit" class="btn btn-secondary btn-sm">Créer</button>

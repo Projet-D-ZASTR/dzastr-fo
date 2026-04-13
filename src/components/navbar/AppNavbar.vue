@@ -15,8 +15,12 @@ const emit = defineEmits(['open-service-modal', 'logout'])
         height="48"
       />
       <div class="flex min-w-0 flex-col leading-tight">
-        <span class="truncate text-xl font-extrabold tracking-tight text-neutral-500 sm:text-2xl">D-ZASTR</span>
-        <span class="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/55">Dashboard</span>
+        <span class="truncate text-xl font-extrabold tracking-tight text-neutral-500 sm:text-2xl"
+          >D-ZASTR</span
+        >
+        <span class="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/55"
+          >Dashboard</span
+        >
       </div>
     </div>
 
