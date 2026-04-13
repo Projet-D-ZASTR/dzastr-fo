@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { jsPDF } from 'jspdf'
 import { buildClientInvoiceMeta, getInvoiceStatusLabel } from '../utils/invoice'
+import { clearAuthSession } from '../services/auth.service'
 import AppNavbar from '../components/navbar/AppNavbar.vue'
 import AppFooter from '../components/footer/AppFooter.vue'
 import ClientTable from '../components/client/ClientTable.vue'
@@ -363,6 +364,7 @@ function downloadInvoicePdf(clientId) {
 }
 
 function logout() {
+  clearAuthSession()
   router.push('/auth')
 }
 </script>

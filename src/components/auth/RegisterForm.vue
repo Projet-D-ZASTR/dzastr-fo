@@ -2,6 +2,17 @@
 import { reactive, ref } from 'vue'
 import AuthFormMark from './AuthFormMark.vue'
 
+defineProps({
+  serverError: {
+    type: String,
+    default: '',
+  },
+  submitting: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const emit = defineEmits(['success', 'switch-to-login'])
 
 const form = reactive({
@@ -11,13 +22,59 @@ const form = reactive({
 })
 
 const showPassword = ref(false)
+const fieldErrors = reactive({
+  fullName: '',
+  email: '',
+  password: '',
+})
 
-function submitRegister() {
-  if (!form.fullName || !form.email || !form.password) {
-    return
+function resetFieldErrors() {
+  fieldErrors.fullName = ''
+  fieldErrors.email = ''
+  fieldErrors.password = ''
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function validateForm() {
+  resetFieldErrors()
+
+  if (!form.fullName.trim()) {
+    fieldErrors.fullName = 'Le nom complet est requis.'
+  }
+  if (!form.email.trim()) {
+    fieldErrors.email = "L'email est requis."
+  } else if (!isValidEmail(form.email.trim())) {
+    fieldErrors.email = "Le format de l'email est invalide."
+  }
+  if (!form.password) {
+    fieldErrors.password = 'Le mot de passe est requis.'
+  } else if (form.password.length < 6) {
+    fieldErrors.password = 'Le mot de passe doit contenir au moins 6 caracteres.'
   }
 
-  emit('success')
+  return !fieldErrors.fullName && !fieldErrors.email && !fieldErrors.password
+}
+
+function mapBackendError(message) {
+  const text = String(message || '')
+  if (text.includes('User_Email')) return "Cet email est invalide ou deja utilise."
+  if (text.includes('User_Password')) return 'Le mot de passe ne respecte pas les regles minimales.'
+  if (text.includes('User_Username')) return "Le nom d'utilisateur est invalide."
+  return text || "Inscription impossible pour le moment."
+}
+
+function submitRegister() {
+  if (!validateForm()) {
+    return
+  }
+  emit('success', {
+    fullName: form.fullName.trim(),
+    email: form.email.trim(),
+    password: form.password,
+  })
 }
 </script>
 
@@ -44,6 +101,9 @@ function submitRegister() {
           placeholder="Jane Doe"
           class="input input-bordered input-md w-full text-base"
         />
+        <span v-if="fieldErrors.fullName" class="mt-1 text-xs font-medium text-error">
+          {{ fieldErrors.fullName }}
+        </span>
       </div>
 
       <div class="form-control w-full">
@@ -59,6 +119,9 @@ function submitRegister() {
           placeholder="you@example.com"
           class="input input-bordered input-md w-full text-base"
         />
+        <span v-if="fieldErrors.email" class="mt-1 text-xs font-medium text-error">
+          {{ fieldErrors.email }}
+        </span>
       </div>
 
       <div class="form-control w-full">
@@ -105,9 +168,25 @@ function submitRegister() {
             </svg>
           </button>
         </div>
+        <span v-if="fieldErrors.password" class="mt-1 text-xs font-medium text-error">
+          {{ fieldErrors.password }}
+        </span>
       </div>
 
-      <button type="submit" class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base">Get started</button>
+      <p
+        v-if="serverError"
+        class="rounded-box border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      >
+        {{ mapBackendError(serverError) }}
+      </p>
+
+      <button
+        type="submit"
+        class="btn btn-secondary btn-md mt-2 w-full px-6 py-3 text-base"
+        :disabled="submitting"
+      >
+        {{ submitting ? 'Creation...' : 'Get started' }}
+      </button>
 
       <button
         type="button"

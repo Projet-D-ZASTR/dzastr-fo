@@ -1,193 +1,155 @@
-# dzastr-fo
- 
-Frontend application for the D-ZASTR project, built with Vue 3, Vite, and DaisyUI.
+# D-ZASTR Frontend
 
-## Project Overview
+Application frontend de gestion clients, services et factures, construite avec Vue 3 + Vite + DaisyUI.
 
-This repository contains the frontend of the application.
+![Logo D-ZASTR SVG](public/img/D-Zastre.svg)
 
-The frontend is designed as a single-page application with a simple workflow:
+## Assets
 
-- authentication screen
-- main dashboard after login
-- client management
-- service creation
-- invoice creation
-- PDF generation through the backend
+- Logo SVG: `public/img/D-Zastre.svg`
+- Logo PNG: `public/img/D-Zastre.png`
+- Favicon: `public/img/favicon.ico`
 
-The goal is to keep the interface clean, fast, and easy to use.
+![Favicon D-ZASTR](public/img/favicon.ico)
 
-## Frontend Stack
+## Vue d'ensemble
+
+Le projet est une SPA avec:
+
+- une route d'authentification (`/auth`)
+- un dashboard principal (`/`)
+- une gestion locale en memoire des donnees (clients, services, factures)
+- une generation PDF cote front via `jsPDF`
+
+## Fonctionnalites principales
+
+- Authentification UI (login/register) avec navigation vers dashboard
+- Tableau clients:
+  - ajout
+  - edition
+  - suppression avec confirmation
+  - creation de facture
+  - acces aux factures existantes via icones
+- Creation de services:
+  - nom du service
+  - prix horaire decimal (virgule ou point)
+- Gestion facture:
+  - plusieurs factures par client
+  - creation en brouillon
+  - edition des lignes en mode brouillon
+  - verrouillage en lecture sur statuts non-brouillon
+  - changement d'etat (brouillon, envoyee, payee, annulee)
+  - calcul HT / TVA / TTC
+  - mode auto-entrepreneur (TVA 0%)
+- Export PDF:
+  - document A4 propre (infos client, lignes, totaux)
+  - export direct depuis le JSON de la facture selectionnee
+
+## Stack technique
 
 - Vue 3
 - Vite
 - Vue Router
-- Tailwind CSS
-- DaisyUI
+- Tailwind CSS v4
+- DaisyUI v5
+- Vitest
 - ESLint
 - Prettier
-- Vitest
+- jsPDF
 
-## Functional Scope
+## Routes
 
-### Authentication
+- `/` -> `MainView`
+- `/auth` -> `AuthView`
+- fallback `/:pathMatch(.*)*` -> redirection `/auth`
 
-The application starts with an authentication interface.
+## Lancer le projet
 
-Planned features:
+```bash
+npm install
+npm run dev
+```
 
-- login form
-- register form
-- access to the main dashboard after successful authentication
+Important: `npm run dev` lance automatiquement les tests avant de demarrer le serveur (script `predev`).
 
-### Main Dashboard
+## Scripts disponibles
 
-After authentication, the user accesses a mono-page dashboard with:
+```bash
+npm run dev         # lance les tests puis demarre Vite
+npm run build       # build production
+npm run preview     # preview du build
+npm run test        # tests unitaires (vitest run)
+npm run test:watch  # tests en mode watch
+```
 
-- a navigation bar
-- a button to create a service
-- a client management area
-- invoice creation actions
+## Tests
 
-### Client Management
+Tests existants:
 
-The dashboard includes a client table with the ability to:
+- `src/utils/invoice.test.js`
+  - calcul TVA standard
+  - calcul auto-entrepreneur
+  - metadata facture client
+  - fallback label statut
 
-- add a client
-- edit a client
-- delete a client
-- create an invoice for a client
-
-### Service Management
-
-A button in the navbar opens a modal to create a new service.
-
-A service contains at least:
-
-- title
-- hourly rate
-
-### Invoice Management
-
-From the client table, the user can open a dedicated invoice component to:
-
-- select one or more services
-- generate invoice lines
-- calculate totals
-- prepare PDF export
-
-### PDF Generation
-
-The frontend will interact with the backend to:
-
-- generate a PDF invoice
-- allow document download
-
-## Planned UI Structure
-
-### Authentication View
-
-A dedicated authentication page with:
-
-- LoginForm
-- RegisterForm
-
-### Dashboard View
-
-A single main page containing:
-
-- AppNavbar
-- ClientTable
-- ClientModal
-- PrestationModal
-- FactureModal or InvoiceBuilder
-
-## Planned Project Structure
+## Structure du projet
 
 ```text
 src/
-  assets/
+  App.vue
+  main.js
+  style.css
   components/
     auth/
       LoginForm.vue
       RegisterForm.vue
-    navbar/
-      AppNavbar.vue
     client/
       ClientTable.vue
       ClientModal.vue
-    prestation/
-      PrestationModal.vue
+    footer/
+      AppFooter.vue
     facture/
       FactureModal.vue
+      FacturePanel.vue
+    navbar/
+      AppNavbar.vue
+    prestation/
+      PrestationModal.vue
     ui/
       BaseModal.vue
   router/
     index.js
+  utils/
+    invoice.js
+    invoice.test.js
   views/
+    AuthView.vue
     MainView.vue
-  App.vue
-  main.js
-  style.css
 ```
 
-## UI Theme Setup
+## Composants et logique cle
 
-This project uses DaisyUI with a custom theme named D-ZASTR.
+- `src/views/MainView.vue`
+  - orchestration des donnees et de l'UI principale
+  - creation/edition des factures, changement de statut
+  - export PDF via `downloadInvoicePdf`
+- `src/components/client/ClientTable.vue`
+  - affichage clients + actions
+  - une icone par facture avec statut au survol
+- `src/components/facture/FacturePanel.vue`
+  - mode creation/edition pour brouillon
+  - mode lecture pour facture non-brouillon
+- `src/components/ui/BaseModal.vue`
+  - base commune des popups
 
-## UI Stack
+## Theme UI
 
-- Tailwind CSS
-- DaisyUI
-- Custom theme: D-ZASTR
+Le projet utilise DaisyUI avec le theme personnalise **D-ZASTR** (palette claire, contrastes doux, composants arrondis).
 
-## Theme Used
+## Build & deploy
 
-The D-ZASTR theme is declared through the DaisyUI plugin with a custom configuration based on OKLCH colors.
-
-### Features
-
-- light mode
-- custom palette
-- soft rounded corners
-- clean and modern look
-- centralized color variables
-
-## Theme Configuration
-
-```css
-@plugin "daisyui/theme" {
-  name: "D-ZASTR";
-  default: false;
-  prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: oklch(100% 0 0);
-  --color-base-200: oklch(97% 0 0);
-  --color-base-300: oklch(92% 0 0);
-  --color-base-content: oklch(20% 0 0);
-  --color-primary: oklch(85% 0.199 91.936);
-  --color-primary-content: oklch(42% 0.095 57.708);
-  --color-secondary: oklch(75% 0.183 55.934);
-  --color-secondary-content: oklch(40% 0.123 38.172);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(37% 0.01 67.558);
-  --color-neutral-content: oklch(92% 0.003 48.717);
-  --color-info: oklch(74% 0.16 232.661);
-  --color-info-content: oklch(39% 0.09 240.876);
-  --color-success: oklch(76% 0.177 163.223);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(70% 0.191 22.216);
-  --color-error-content: oklch(39% 0.141 25.723);
-  --radius-selector: 1rem;
-  --radius-field: 0.5rem;
-  --radius-box: 1rem;
-  --size-selector: 0.25rem;
-  --size-field: 0.25rem;
-  --border: 1px;
-  --depth: 1;
-  --noise: 0;
-}
-```
+- Build production: `npm run build`
+- Preview locale du build: `npm run preview`
+- Docker present:
+  - `Dockerfile`
+  - `nginx.conf`
