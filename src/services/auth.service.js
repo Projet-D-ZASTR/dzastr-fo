@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL ?? 'http://localhost:3000/api'
+const DEFAULT_API_BASE_URL = 'http://localhost:8081/api'
+const RAW_API_BASE_URL = import.meta.env.VITE_AUTH_API_URL ?? DEFAULT_API_BASE_URL
 const SERVICE_TOKEN = import.meta.env.VITE_AUTH_SERVICE_TOKEN ?? ''
 
 const AUTH_TOKEN_KEY = 'dzastr_auth_token'
@@ -13,6 +14,23 @@ function buildHeaders() {
   }
   return headers
 }
+
+function normalizeApiBaseUrl(rawUrl) {
+  let base = (rawUrl || '').trim()
+  if (!base) {
+    return DEFAULT_API_BASE_URL
+  }
+  if (!/^https?:\/\//i.test(base)) {
+    base = `https://${base}`
+  }
+  base = base.replace(/\/+$/, '')
+  if (!base.endsWith('/api')) {
+    base = `${base}/api`
+  }
+  return base
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
 
 async function request(path, payload) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
