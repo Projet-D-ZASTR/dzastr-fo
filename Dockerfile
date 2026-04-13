@@ -4,8 +4,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-ARG VITE_API_URL=http://dzaster-auth:8081
-ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_AUTH_API_URL=http://localhost:8081/api
+ARG VITE_AUTH_SERVICE_TOKEN
+ENV VITE_AUTH_API_URL=${VITE_AUTH_API_URL}
+ENV VITE_AUTH_SERVICE_TOKEN=${VITE_AUTH_SERVICE_TOKEN}
 RUN npm run build
 
 # Runtime stage
