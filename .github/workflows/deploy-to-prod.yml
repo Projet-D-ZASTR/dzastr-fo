@@ -46,8 +46,16 @@ jobs:
     if: github.head_ref == 'develop' && needs.verify-fo.result == 'success'
     runs-on: ubuntu-latest
     needs: verify-fo
+    env:
+      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
 
     steps:
+      - name: Validate PAT_TOKEN secret
+        if: ${{ env.PAT_TOKEN == '' }}
+        run: |
+          echo "PAT_TOKEN est manquant. Ajoute-le dans Settings > Secrets and variables > Actions."
+          exit 1
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -64,5 +72,5 @@ jobs:
           git fetch origin
           git checkout production
           git merge --no-ff origin/develop -m "chore: merge develop -> production [auto]"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
           git push origin production
