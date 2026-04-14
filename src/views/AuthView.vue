@@ -59,16 +59,18 @@ async function onRegister(payload) {
 </script>
 
 <template>
-  <main class="min-h-screen  p-4">
+  <main class="min-h-screen p-4">
     <section class="h-[calc(100vh-2rem)] w-full">
-      <div
-        class="grid h-full w-full overflow-hidden"
-        style="grid-template-columns: 45% 55%;"
-      >
+      <div class="grid h-full w-full overflow-hidden" style="grid-template-columns: 45% 55%">
         <aside class="flex h-full min-h-0 flex-col p-4 text-primary-content">
-          <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-box border border-base-300/20 p-6">
+          <div
+            class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-box border border-base-300/20 p-6"
+          >
             <div class="auth-liquid-base absolute inset-0" aria-hidden="true"></div>
-            <div class="auth-liquid-shift absolute inset-0 opacity-90 mix-blend-soft-light" aria-hidden="true"></div>
+            <div
+              class="auth-liquid-shift absolute inset-0 opacity-90 mix-blend-soft-light"
+              aria-hidden="true"
+            ></div>
 
             <div
               class="auth-blob auth-blob-a pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-[45%] bg-secondary/55 blur-[64px]"
@@ -86,7 +88,10 @@ async function onRegister(payload) {
               class="auth-blob auth-blob-d pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-[55%] bg-secondary/35 blur-[80px]"
               aria-hidden="true"
             ></div>
-            <div class="auth-dot-overlay pointer-events-none absolute inset-0 z-[1]" aria-hidden="true"></div>
+            <div
+              class="auth-dot-overlay pointer-events-none absolute inset-0 z-[1]"
+              aria-hidden="true"
+            ></div>
 
             <img
               src="/img/D-Zastre.svg"
@@ -94,12 +99,15 @@ async function onRegister(payload) {
               class="relative z-[2] h-14 w-14 shrink-0 self-start object-contain [filter:brightness(0)_invert(1)]"
             />
             <div class="relative z-[2] mt-auto space-y-3 pt-8 pb-8 sm:pb-10">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">D-ZASTR Front Office</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+                D-ZASTR Front Office
+              </p>
               <p class="text-3xl font-bold leading-tight text-white/82 sm:text-4xl">
                 Centralisez vos prestations et facturez en quelques clics.
               </p>
               <p class="max-w-md text-sm font-medium leading-relaxed text-white/70">
-                Un espace simple pour gerer vos clients, vos services et preparer vos factures rapidement.
+                Un espace simple pour gerer vos clients, vos services et preparer vos factures
+                rapidement.
               </p>
             </div>
           </div>
@@ -131,10 +139,27 @@ async function onRegister(payload) {
 <style scoped>
 .auth-liquid-base {
   background:
-    radial-gradient(120% 90% at 15% 10%, color-mix(in oklch, var(--color-primary) 85%, transparent) 0%, transparent 55%),
-    radial-gradient(100% 80% at 85% 20%, color-mix(in oklch, var(--color-secondary) 70%, transparent) 0%, transparent 50%),
-    radial-gradient(90% 70% at 50% 95%, color-mix(in oklch, var(--color-secondary) 65%, transparent) 0%, transparent 55%),
-    linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 52%, color-mix(in oklch, var(--color-secondary) 92%, var(--color-primary)) 100%);
+    radial-gradient(
+      120% 90% at 15% 10%,
+      color-mix(in oklch, var(--color-primary) 85%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      100% 80% at 85% 20%,
+      color-mix(in oklch, var(--color-secondary) 70%, transparent) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      90% 70% at 50% 95%,
+      color-mix(in oklch, var(--color-secondary) 65%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-secondary) 52%,
+      color-mix(in oklch, var(--color-secondary) 92%, var(--color-primary)) 100%
+    );
   background-size: 260% 260%;
   animation: auth-liquid-flow 10s ease-in-out infinite;
 }
@@ -196,8 +221,7 @@ async function onRegister(payload) {
 .auth-dot-overlay {
   background-color: transparent;
   background-image:
-    radial-gradient(#fff 0.5px, transparent 0.5px),
-    radial-gradient(#fff 0.5px, transparent 0.5px);
+    radial-gradient(#fff 0.5px, transparent 0.5px), radial-gradient(#fff 0.5px, transparent 0.5px);
   background-size: 20px 20px;
   background-position:
     0 0,

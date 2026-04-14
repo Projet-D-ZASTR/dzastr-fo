@@ -1,9 +1,29 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { jsPDF } from 'jspdf'
 import { buildClientInvoiceMeta, getInvoiceStatusLabel } from '../utils/invoice'
-import { clearAuthSession } from '../services/auth.service'
+import {
+  clearAuthSession,
+  findAuthUserIdByEmail,
+  getAuthUser,
+  updateAuthUserProfile,
+  updateAuthUserSession,
+  verifyAuthSession,
+} from '../services/auth.service'
+import {
+  fetchClients,
+  createClient,
+  updateClient,
+  deleteClient as apiDeleteClient,
+} from '../services/client.service'
+import { fetchServices, createService } from '../services/service.service'
+import {
+  fetchInvoices,
+  createInvoice,
+  updateInvoice,
+  updateInvoiceStatus,
+} from '../services/invoice.service'
 import AppNavbar from '../components/navbar/AppNavbar.vue'
 import AppFooter from '../components/footer/AppFooter.vue'
 import ClientTable from '../components/client/ClientTable.vue'
@@ -11,148 +31,146 @@ import ClientModal from '../components/client/ClientModal.vue'
 import PrestationModal from '../components/prestation/PrestationModal.vue'
 import FacturePanel from '../components/facture/FacturePanel.vue'
 import BaseModal from '../components/ui/BaseModal.vue'
+import ProfileModal from '../components/profile/ProfileModal.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// ── UI state ─────────────────────────────────────────────────────────────────
+const loading = ref(true)
+const globalError = ref('')
+const toastMessage = ref('')
+const toastType = ref('info')
+let toastTimer = null
 
 const showClientModal = ref(false)
 const showServiceModal = ref(false)
 const showDeleteClientModal = ref(false)
+const showProfileModal = ref(false)
+const profileSubmitting = ref(false)
+const profileError = ref('')
 
 const selectedClientId = ref(null)
 const selectedInvoiceId = ref(null)
 const editingClient = ref(null)
 const pendingDeleteClientId = ref(null)
+
+// ── Données ──────────────────────────────────────────────────────────────────
+const currentUser = ref(null)
+const clients = ref([])
+const services = ref([])
+const invoices = ref([])
+
 const INVOICE_TEMPLATE = Object.freeze({
   id: '',
   number: 'FAC-YYYY-XXXXXX',
   date: '',
   status: 'brouillon',
   clientId: '',
-  lines: [
-    {
-      title: 'Nom service',
-      hours: 1,
-      hourlyRate: 100,
-      total: 100,
-    },
-  ],
-  ht: 100,
-  tva: 20,
-  ttc: 120,
-  total: 120,
+  lines: [],
+  ht: 0,
+  tva: 0,
+  ttc: 0,
+  total: 0,
   isAutoEntrepreneur: false,
 })
 
-const invoicesByClient = ref({
-  c1: [
-    {
-      id: 'inv-c1-1',
-      number: 'FAC-2026-100001',
-      date: '2026-03-10T09:30:00.000Z',
-      status: 'payee',
-      clientId: 'c1',
-      lines: [{ title: 'UX Audit', hours: 4, hourlyRate: 90, total: 360 }],
-      ht: 360,
-      tva: 72,
-      ttc: 432,
-      total: 432,
-      isAutoEntrepreneur: false,
-      isDraft: false,
-    },
-  ],
-  c2: [
-    {
-      id: 'inv-c2-1',
-      number: 'FAC-2026-100002',
-      date: '2026-03-14T15:20:00.000Z',
-      status: 'envoyee',
-      clientId: 'c2',
-      lines: [{ title: 'Frontend Dev', hours: 6.5, hourlyRate: 120, total: 780 }],
-      ht: 780,
-      tva: 156,
-      ttc: 936,
-      total: 936,
-      isAutoEntrepreneur: false,
-      isDraft: false,
-    },
-  ],
-  c3: [
-    {
-      id: 'inv-c3-1',
-      number: 'FAC-2026-100003',
-      date: '2026-03-18T11:00:00.000Z',
-      status: 'brouillon',
-      clientId: 'c3',
-      lines: [{ title: 'Maquette UI', hours: 3, hourlyRate: 95, total: 285 }],
-      ht: 285,
-      tva: 57,
-      ttc: 342,
-      total: 342,
-      isAutoEntrepreneur: false,
-      isDraft: false,
-    },
-  ],
+// ── Computed ──────────────────────────────────────────────────────────────────
+const invoicesByClient = computed(() => {
+  const map = {}
+  for (const inv of invoices.value) {
+    if (!map[inv.clientId]) map[inv.clientId] = []
+    map[inv.clientId].push(inv)
+  }
+  return map
 })
-const currentUser = ref({
-  name: 'Utilisateur D-ZASTR',
-  email: 'contact@dzastr.app',
-})
-
-const clients = ref([
-  { id: 'c1', name: 'Alice Martin', email: 'alice@acme.fr', company: 'Acme', invoiceStatus: 'payee' },
-  { id: 'c2', name: 'Paul Durant', email: 'paul@globex.fr', company: 'Globex', invoiceStatus: 'envoyee' },
-  { id: 'c3', name: 'Sophie Bernard', email: 'sophie@initech.fr', company: 'Initech', invoiceStatus: 'brouillon' },
-  { id: 'c4', name: 'Lucas Moreau', email: 'lucas@hooli.fr', company: 'Hooli', invoiceStatus: null },
-  { id: 'c5', name: 'Camille Petit', email: 'camille@stark.fr', company: 'Stark Industries', invoiceStatus: 'annulee' },
-  { id: 'c6', name: 'Nora Garcia', email: 'nora@wayne.fr', company: 'Wayne Enterprises', invoiceStatus: null },
-  { id: 'c7', name: 'Hugo Laurent', email: 'hugo@umbrella.fr', company: 'Umbrella', invoiceStatus: null },
-  { id: 'c8', name: 'Emma Robert', email: 'emma@wonka.fr', company: 'Wonka', invoiceStatus: 'envoyee' },
-  { id: 'c9', name: 'Yanis Lefevre', email: 'yanis@cyberdyne.fr', company: 'Cyberdyne', invoiceStatus: null },
-  { id: 'c10', name: 'Lea Fontaine', email: 'lea@soylent.fr', company: 'Soylent', invoiceStatus: null },
-  { id: 'c11', name: 'Tom Renaud', email: 'tom@vehement.fr', company: 'Vehement Capital', invoiceStatus: 'payee' },
-  { id: 'c12', name: 'Ines Dupuis', email: 'ines@bluth.fr', company: 'Bluth Company', invoiceStatus: null },
-  { id: 'c13', name: 'Noah Marchand', email: 'noah@massive.fr', company: 'Massive Dynamic', invoiceStatus: null },
-  { id: 'c14', name: 'Mila Caron', email: 'mila@oscorp.fr', company: 'Oscorp', invoiceStatus: 'envoyee' },
-  { id: 'c15', name: 'Louis Perrin', email: 'louis@vought.fr', company: 'Vought', invoiceStatus: null },
-  { id: 'c16', name: 'Jade Mercier', email: 'jade@aptive.fr', company: 'Aptive', invoiceStatus: 'brouillon' },
-  { id: 'c17', name: 'Ethan Colin', email: 'ethan@nakatomi.fr', company: 'Nakatomi Trading', invoiceStatus: null },
-  { id: 'c18', name: 'Manon Giraud', email: 'manon@momcorp.fr', company: 'MomCorp', invoiceStatus: 'payee' },
-  { id: 'c19', name: 'Adam Roux', email: 'adam@octan.fr', company: 'Octan Corp', invoiceStatus: null },
-  { id: 'c20', name: 'Sarah Lambert', email: 'sarah@lexcorp.fr', company: 'LexCorp', invoiceStatus: 'annulee' },
-  { id: 'c21', name: 'Leo Schmitt', email: 'leo@blackmesa.fr', company: 'Black Mesa', invoiceStatus: null },
-  { id: 'c22', name: 'Chloe Leclerc', email: 'chloe@capsule.fr', company: 'Capsule Corp', invoiceStatus: null },
-  { id: 'c23', name: 'Mathis Faure', email: 'mathis@planet.fr', company: 'Planet Express', invoiceStatus: 'envoyee' },
-  { id: 'c24', name: 'Zoé Vidal', email: 'zoe@monarch.fr', company: 'Monarch Solutions', invoiceStatus: null },
-])
-
-const services = ref([
-  { id: 's1', title: 'UX Audit', hourlyRate: 90 },
-  { id: 's2', title: 'Frontend Dev', hourlyRate: 120 },
-])
-
-const selectedClient = computed(() =>
-  clients.value.find((client) => client.id === selectedClientId.value) ?? null,
-)
-
-const selectedClientInvoices = computed(() => {
-  if (!selectedClientId.value) return []
-  return invoicesByClient.value[selectedClientId.value] ?? []
-})
-
-const selectedInvoice = computed(() =>
-  selectedClientInvoices.value.find((invoice) => invoice.id === selectedInvoiceId.value) ?? null,
-)
 
 const clientsWithInvoiceMeta = computed(() =>
-  clients.value.map((client) => {
-    const invoices = invoicesByClient.value[client.id] ?? []
-    return {
-      ...client,
-      ...buildClientInvoiceMeta(invoices),
-    }
-  }),
+  clients.value.map((client) => ({
+    ...client,
+    ...buildClientInvoiceMeta(invoicesByClient.value[client.id] ?? []),
+  }))
 )
 
+const selectedClient = computed(
+  () => clients.value.find((c) => c.id === selectedClientId.value) ?? null
+)
+
+const selectedClientInvoices = computed(() =>
+  selectedClientId.value != null ? (invoicesByClient.value[selectedClientId.value] ?? []) : []
+)
+
+const selectedInvoice = computed(
+  () => selectedClientInvoices.value.find((inv) => inv.id === selectedInvoiceId.value) ?? null
+)
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  toastMessage.value = message
+  toastType.value = type
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+  }, 4500)
+}
+
+function getQueryValue(value) {
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+function applyInvoiceSelectionFromQuery() {
+  const clientQuery = getQueryValue(route.query.client)
+  if (!clientQuery) return
+
+  const targetClient = clients.value.find((client) => String(client.id) === String(clientQuery))
+  if (!targetClient) return
+
+  const clientInvs = invoicesByClient.value[targetClient.id] ?? []
+  if (!clientInvs.length) return
+
+  const invoiceQuery = getQueryValue(route.query.invoice)
+  const targetInvoice = invoiceQuery
+    ? clientInvs.find((invoice) => String(invoice.id) === String(invoiceQuery))
+    : null
+
+  selectedClientId.value = targetClient.id
+  selectedInvoiceId.value = targetInvoice?.id ?? clientInvs[clientInvs.length - 1].id
+}
+
+// ── Chargement initial ────────────────────────────────────────────────────────
+async function loadAll() {
+  loading.value = true
+  globalError.value = ''
+  try {
+    const user = getAuthUser()
+    if (!user?.User_Id) {
+      clearAuthSession()
+      router.replace('/auth')
+      return
+    }
+    currentUser.value = user
+
+    const [clientsData, servicesData] = await Promise.all([
+      fetchClients(user.User_Id),
+      fetchServices(),
+    ])
+    const invoicesData = await fetchInvoices(user.User_Id, servicesData)
+
+    clients.value = clientsData
+    services.value = servicesData
+    invoices.value = invoicesData
+    applyInvoiceSelectionFromQuery()
+  } catch (err) {
+    globalError.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadAll)
+
+// ── Clients ───────────────────────────────────────────────────────────────────
 function openCreateClient() {
   editingClient.value = null
   showClientModal.value = true
@@ -163,13 +181,46 @@ function openEditClient(client) {
   showClientModal.value = true
 }
 
-function saveClient(payload) {
-  if (payload.id) {
-    clients.value = clients.value.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
-    return
-  }
+async function saveClient(payload) {
+  try {
+    if (payload.id) {
+      const updated = await updateClient(payload.id, payload)
+      clients.value = clients.value.map((c) => (c.id === payload.id ? updated : c))
+      showToast('Client mis à jour.', 'success')
+    } else {
+      const verified = await verifyAuthSession().catch(() => null)
+      const emailForLookup = currentUser.value?.User_Email ?? verified?.User_Email
+      const fallbackUserId = await findAuthUserIdByEmail(emailForLookup).catch(() => null)
 
-  clients.value.push({ ...payload, id: crypto.randomUUID() })
+      const resolvedUserId = Number(
+        fallbackUserId ?? verified?.User_Id ?? currentUser.value?.User_Id
+      )
+      if (!Number.isInteger(resolvedUserId) || resolvedUserId <= 0) {
+        throw new Error("Impossible de déterminer l'utilisateur connecté.")
+      }
+
+      currentUser.value = {
+        ...currentUser.value,
+        ...(verified ?? {}),
+        User_Id: resolvedUserId,
+      }
+      updateAuthUserSession(currentUser.value)
+
+      const created = await createClient(resolvedUserId, payload)
+      clients.value.push(created)
+      showToast('Client créé.', 'success')
+    }
+  } catch (err) {
+    const message = String(err?.message || '')
+    if (message.includes('(500)')) {
+      showToast(
+        `Création client impossible (500). User_Id utilisé: ${currentUser.value?.User_Id ?? 'N/A'}.`,
+        'error'
+      )
+      return
+    }
+    showToast(message, 'error')
+  }
 }
 
 function deleteClient(clientId) {
@@ -177,12 +228,24 @@ function deleteClient(clientId) {
   showDeleteClientModal.value = true
 }
 
-function confirmDeleteClient() {
+async function confirmDeleteClient() {
   if (!pendingDeleteClientId.value) return
   const clientId = pendingDeleteClientId.value
-  clients.value = clients.value.filter((item) => item.id !== clientId)
-  pendingDeleteClientId.value = null
-  showDeleteClientModal.value = false
+  try {
+    await apiDeleteClient(clientId)
+    if (selectedClientId.value === clientId) {
+      selectedClientId.value = null
+      selectedInvoiceId.value = null
+    }
+    invoices.value = invoices.value.filter((inv) => inv.clientId !== clientId)
+    clients.value = clients.value.filter((c) => c.id !== clientId)
+    showToast('Client supprimé.', 'success')
+  } catch (err) {
+    showToast(err.message, 'error')
+  } finally {
+    pendingDeleteClientId.value = null
+    showDeleteClientModal.value = false
+  }
 }
 
 function cancelDeleteClient() {
@@ -190,89 +253,153 @@ function cancelDeleteClient() {
   showDeleteClientModal.value = false
 }
 
+// ── Services ──────────────────────────────────────────────────────────────────
+async function addService({ title, hourlyRate }) {
+  try {
+    const created = await createService({ title, hourlyRate })
+    services.value.push(created)
+    showToast('Service créé.', 'success')
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+async function saveProfile(payload) {
+  const userId = currentUser.value?.User_Id
+  if (!userId) return
+  profileSubmitting.value = true
+  profileError.value = ''
+  try {
+    const updated = await updateAuthUserProfile(userId, {
+      ...payload,
+      User_Role: currentUser.value?.User_Role ?? 'user',
+    })
+    currentUser.value = updated
+    updateAuthUserSession(updated)
+    showProfileModal.value = false
+    showToast('Profil mis à jour.', 'success')
+  } catch (err) {
+    profileError.value = err.message
+  } finally {
+    profileSubmitting.value = false
+  }
+}
+
+// ── Factures ──────────────────────────────────────────────────────────────────
 function openInvoice(client) {
   selectedClientId.value = client.id
-  const invoiceId = crypto.randomUUID()
+  const draftId = `draft-${crypto.randomUUID()}`
   const now = new Date()
-  const draftInvoice = {
+  const draft = {
     ...INVOICE_TEMPLATE,
-    id: invoiceId,
+    id: draftId,
     number: `FAC-${now.getFullYear()}-${String(now.getTime()).slice(-6)}`,
     date: now.toISOString(),
-    status: 'brouillon',
     clientId: client.id,
-    lines: [],
-    ht: 0,
-    tva: 0,
-    ttc: 0,
-    total: 0,
     isDraft: true,
+    _isNew: true,
   }
-  const existing = invoicesByClient.value[client.id] ?? []
-  invoicesByClient.value = {
-    ...invoicesByClient.value,
-    [client.id]: [...existing, draftInvoice],
-  }
-  selectedInvoiceId.value = invoiceId
+  invoices.value.push(draft)
+  selectedInvoiceId.value = draftId
 }
 
 function viewInvoices(client, invoiceId = null) {
-  const invoices = invoicesByClient.value[client.id] ?? []
-  if (!invoices.length) return
+  const clientInvs = invoicesByClient.value[client.id] ?? []
+  if (!clientInvs.length) return
   selectedClientId.value = client.id
-  selectedInvoiceId.value = invoiceId ?? invoices[invoices.length - 1].id
-}
-
-function addService(service) {
-  services.value.push(service)
+  selectedInvoiceId.value = invoiceId ?? clientInvs[clientInvs.length - 1].id
 }
 
 function closeInvoicePanel() {
+  invoices.value = invoices.value.filter((inv) => !inv._isNew)
   selectedClientId.value = null
   selectedInvoiceId.value = null
 }
 
-function updateInvoiceStatus({ clientId, invoiceId, status }) {
-  const invoices = invoicesByClient.value[clientId] ?? []
-  invoicesByClient.value = {
-    ...invoicesByClient.value,
-    [clientId]: invoices.map((invoice) => (invoice.id === invoiceId ? { ...invoice, status } : invoice)),
+async function saveInvoice({
+  clientId,
+  invoiceId,
+  status,
+  lines,
+  ht,
+  tva,
+  ttc,
+  isAutoEntrepreneur,
+}) {
+  try {
+    const userId = currentUser.value?.User_Id
+    if (!userId) return
+    const existingInv = invoices.value.find((i) => i.id === invoiceId)
+
+    if (existingInv?._isNew) {
+      const saved = await createInvoice({
+        userId,
+        clientId,
+        lines,
+        ht,
+        tva,
+        ttc,
+        isAutoEntrepreneur,
+        status,
+        services: services.value,
+      })
+      invoices.value = invoices.value.filter((i) => i.id !== invoiceId)
+      invoices.value.push(saved)
+      selectedInvoiceId.value = saved.id
+    } else {
+      const saved = await updateInvoice({
+        invoiceId,
+        lines,
+        ht,
+        tva,
+        ttc,
+        isAutoEntrepreneur,
+        status,
+        number: existingInv?.number,
+        existingItemIds: existingInv?.itemIds ?? [],
+        services: services.value,
+      })
+      invoices.value = invoices.value.map((i) => (i.id === invoiceId ? saved : i))
+    }
+    showToast('Facture enregistrée.', 'success')
+  } catch (err) {
+    showToast(err.message, 'error')
   }
 }
 
-function saveInvoice({ clientId, invoiceId, status, lines, total, ht, tva, ttc, isAutoEntrepreneur }) {
-  const invoices = invoicesByClient.value[clientId] ?? []
-  invoicesByClient.value = {
-    ...invoicesByClient.value,
-    [clientId]: invoices.map((invoice) =>
-      invoice.id === invoiceId
-        ? {
-            ...invoice,
-            status,
-            lines,
-            total,
-            ht,
-            tva,
-            ttc,
-            isAutoEntrepreneur,
-            isDraft: false,
-            updatedAt: new Date().toISOString(),
-          }
-        : invoice,
-    ),
+async function handleUpdateStatus({ clientId, invoiceId, status }) {
+  try {
+    const inv = invoices.value.find((i) => i.id === invoiceId)
+    if (inv?._isNew) {
+      invoices.value = invoices.value.map((i) => (i.id === invoiceId ? { ...i, status } : i))
+      return
+    }
+    const updated = await updateInvoiceStatus(invoiceId, status, services.value)
+    invoices.value = invoices.value.map((i) => (i.id === invoiceId ? { ...i, ...updated } : i))
+    showToast('Statut mis à jour.', 'success')
+  } catch (err) {
+    showToast(err.message, 'error')
   }
-  selectedInvoiceId.value = invoiceId
 }
 
+// ── PDF ───────────────────────────────────────────────────────────────────────
 function downloadInvoicePdf(clientId) {
-  const client = clients.value.find((item) => item.id === clientId)
-  const invoices = invoicesByClient.value[clientId] ?? []
-  const invoice = invoices.find((item) => item.id === selectedInvoiceId.value) ?? invoices[invoices.length - 1]
+  const client = clients.value.find((c) => c.id === clientId)
+  const invoiceList = invoicesByClient.value[clientId] ?? []
+  const invoice =
+    invoiceList.find((i) => i.id === selectedInvoiceId.value) ?? invoiceList[invoiceList.length - 1]
   if (!client || !invoice) return
+
+  const user = currentUser.value
+  const freelancerName = user?.User_Username ?? user?.User_Email ?? 'Prestataire'
+  const freelancerEmail = user?.User_Email ?? ''
+  const freelancerCompany = user?.User_Entreprise ?? 'D-ZASTR'
 
   const formatDate = (value) => new Date(value).toLocaleDateString('fr-FR')
   const formatAmount = (value) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0)
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+      Number(value) || 0
+    )
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -286,7 +413,7 @@ function downloadInvoicePdf(clientId) {
   doc.setFont('helvetica', 'normal')
   doc.text(`No ${invoice.number}`, rightX, y, { align: 'right' })
   y += 6
-  doc.text(`Date: ${formatDate(invoice.date)}`, rightX, y, { align: 'right' })
+  doc.text(`Date : ${formatDate(invoice.date)}`, rightX, y, { align: 'right' })
   y += 10
 
   doc.setDrawColor(220, 220, 220)
@@ -300,22 +427,27 @@ function downloadInvoicePdf(clientId) {
 
   doc.setFont('helvetica', 'normal')
   doc.text(client.name, 14, y)
-  doc.text(currentUser.value.name, 110, y)
+  doc.text(freelancerName, 110, y)
   y += 5
   doc.text(client.email, 14, y)
-  doc.text(currentUser.value.email, 110, y)
+  doc.text(freelancerEmail, 110, y)
   y += 5
-  doc.text(client.company, 14, y)
-  doc.text('D-ZASTR', 110, y)
-  y += 10
+  if (client.company) doc.text(client.company, 14, y)
+  doc.text(freelancerCompany, 110, y)
+  y += 5
+  if (client.adresse) {
+    doc.text(client.adresse, 14, y)
+    y += 5
+  }
+  y += 5
 
   doc.setFont('helvetica', 'bold')
-  doc.text(`Etat: ${getInvoiceStatusLabel(invoice.status)}`, 14, y)
+  doc.text(`État : ${getInvoiceStatusLabel(invoice.status)}`, 14, y)
   doc.setFont('helvetica', 'normal')
   doc.text(
-    invoice.isAutoEntrepreneur ? 'Regime: Auto-entrepreneur (TVA 0%)' : 'Regime: TVA 20%',
+    invoice.isAutoEntrepreneur ? 'Régime : Auto-entrepreneur (TVA 0%)' : 'Régime : TVA 20%',
     110,
-    y,
+    y
   )
   y += 8
 
@@ -325,24 +457,34 @@ function downloadInvoicePdf(clientId) {
   doc.setFontSize(9)
   doc.text('Service', 16, y + 5.3)
   doc.text('Heures', 108, y + 5.3)
-  doc.text('Tarif', 135, y + 5.3)
+  doc.text('Tarif/h', 135, y + 5.3)
   doc.text('Total', rightX - 2, y + 5.3, { align: 'right' })
   y += 10
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
-  ;(invoice.lines ?? []).forEach((line) => {
-    const lineTotal = Number(line.total ?? Number(line.hours) * Number(line.hourlyRate))
-    if (y > 250) {
-      doc.addPage()
-      y = 20
+  const lines = invoice.lines ?? []
+  if (lines.length) {
+    for (const line of lines) {
+      const lineTotal = Number(line.total ?? Number(line.hours) * Number(line.hourlyRate))
+      if (y > 250) {
+        doc.addPage()
+        y = 20
+      }
+      doc.text(String(line.title ?? '-'), 16, y)
+      doc.text(String(line.hours ?? 0), 108, y)
+      doc.text(formatAmount(line.hourlyRate ?? 0), 135, y)
+      doc.text(formatAmount(lineTotal), rightX - 2, y, { align: 'right' })
+      y += 6
     }
-    doc.text(String(line.title ?? '-'), 16, y)
-    doc.text(String(line.hours ?? 0), 108, y)
-    doc.text(formatAmount(line.hourlyRate ?? 0), 135, y)
-    doc.text(formatAmount(lineTotal), rightX - 2, y, { align: 'right' })
+  } else {
+    doc.setFontSize(8)
+    doc.setTextColor(150)
+    doc.text('Détail des lignes non disponible (non persisté côté serveur).', 16, y)
+    doc.setTextColor(0)
+    doc.setFontSize(9)
     y += 6
-  })
+  }
 
   y += 4
   doc.line(110, y, rightX, y)
@@ -359,10 +501,10 @@ function downloadInvoicePdf(clientId) {
   doc.text('TTC', 130, y)
   doc.text(formatAmount(invoice.ttc ?? invoice.total), rightX, y, { align: 'right' })
 
-  const filename = `facture-${invoice.number}.pdf`
-  doc.save(filename)
+  doc.save(`facture-${invoice.number}.pdf`)
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
 function logout() {
   clearAuthSession()
   router.push('/auth')
@@ -371,9 +513,39 @@ function logout() {
 
 <template>
   <main class="flex min-h-screen min-h-[100dvh] flex-col bg-base-100">
-    <AppNavbar @open-service-modal="showServiceModal = true" @logout="logout" />
+    <AppNavbar
+      @open-service-modal="showServiceModal = true"
+      @open-profile="showProfileModal = true"
+      @logout="logout"
+    />
 
-    <div class="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4">
+    <div v-if="loading" class="flex flex-1 items-center justify-center">
+      <span class="loading loading-spinner loading-lg text-secondary" />
+    </div>
+
+    <div
+      v-else-if="globalError"
+      class="flex flex-1 flex-col items-center justify-center gap-4 px-4"
+    >
+      <div role="alert" class="alert alert-error max-w-lg shadow">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span class="text-sm">{{ globalError }}</span>
+      </div>
+      <button class="btn btn-outline btn-sm" @click="loadAll">Réessayer</button>
+    </div>
+
+    <div v-else class="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4">
       <div
         class="flex min-h-0 w-full flex-1 flex-col gap-4 sm:gap-5 xl:flex-row xl:items-stretch xl:gap-6"
       >
@@ -387,10 +559,7 @@ function logout() {
           @view-invoices="viewInvoices"
         />
 
-        <aside
-          v-if="selectedClient"
-          class="w-full shrink-0 xl:h-full xl:w-[min(30rem,100%)]"
-        >
+        <aside v-if="selectedClient" class="w-full shrink-0 xl:h-full xl:w-[min(30rem,100%)]">
           <FacturePanel
             :client="selectedClient"
             :services="services"
@@ -398,7 +567,7 @@ function logout() {
             :invoice-template="INVOICE_TEMPLATE"
             @close="closeInvoicePanel"
             @save-invoice="saveInvoice"
-            @update-status="updateInvoiceStatus"
+            @update-status="handleUpdateStatus"
             @download-pdf="downloadInvoicePdf"
           />
         </aside>
@@ -409,10 +578,17 @@ function logout() {
 
     <ClientModal v-model="showClientModal" :client="editingClient" @save="saveClient" />
     <PrestationModal v-model="showServiceModal" @save="addService" />
+    <ProfileModal
+      v-model="showProfileModal"
+      :user="currentUser"
+      :submitting="profileSubmitting"
+      :error-message="profileError"
+      @save="saveProfile"
+    />
     <BaseModal v-model="showDeleteClientModal" title="Confirmer la suppression">
       <div class="space-y-4">
         <p class="text-sm text-base-content/80">
-          Cette action est irreversible. Voulez-vous vraiment supprimer ce client ?
+          Cette action est irréversible. Voulez-vous vraiment supprimer ce client ?
         </p>
         <div class="modal-action mt-1 flex items-center justify-end gap-2">
           <button type="button" class="btn btn-ghost btn-sm" @click="cancelDeleteClient">
@@ -424,5 +600,18 @@ function logout() {
         </div>
       </div>
     </BaseModal>
+
+    <div v-if="toastMessage" class="toast toast-end toast-bottom z-50">
+      <div
+        class="alert shadow-md"
+        :class="{
+          'alert-success': toastType === 'success',
+          'alert-error': toastType === 'error',
+          'alert-info': toastType === 'info',
+        }"
+      >
+        <span class="text-sm">{{ toastMessage }}</span>
+      </div>
+    </div>
   </main>
 </template>

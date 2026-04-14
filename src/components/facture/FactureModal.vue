@@ -30,7 +30,7 @@ watch(
       }
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 const lines = computed(() =>
@@ -42,7 +42,7 @@ const lines = computed(() =>
       hours: Number(quantities[service.id] || 0),
       hourlyRate: service.hourlyRate,
       total: Number(quantities[service.id] || 0) * service.hourlyRate,
-    })),
+    }))
 )
 
 const totalAmount = computed(() => lines.value.reduce((sum, line) => sum + line.total, 0))
@@ -98,7 +98,12 @@ function submitInvoice() {
 
       <div class="modal-action">
         <button type="button" class="btn" @click="$emit('update:modelValue', false)">Cancel</button>
-        <button type="button" class="btn btn-primary" :disabled="!lines.length" @click="submitInvoice">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="!lines.length"
+          @click="submitInvoice"
+        >
           Prepare PDF
         </button>
       </div>
