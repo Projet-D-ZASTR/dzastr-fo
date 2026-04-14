@@ -19,6 +19,7 @@ const form = reactive({
   name: '',
   email: '',
   company: '',
+  adresse: '',
 })
 
 watch(
@@ -27,20 +28,27 @@ watch(
     form.name = value?.name || ''
     form.email = value?.email || ''
     form.company = value?.company || ''
+    form.adresse = value?.adresse || ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
+const errors = reactive({ name: '', email: '', company: '', adresse: '' })
+
 function submitClient() {
-  if (!form.name || !form.email) {
-    return
-  }
+  errors.name = form.name.trim() ? '' : 'Le nom est requis.'
+  errors.email = form.email.trim() ? '' : "L'email est requis."
+  errors.company = form.company.trim() ? '' : 'La société est requise.'
+  errors.adresse = form.adresse.trim() ? '' : "L'adresse est requise."
+
+  if (errors.name || errors.email || errors.company || errors.adresse) return
 
   emit('save', {
     id: props.client?.id,
-    name: form.name,
-    email: form.email,
-    company: form.company,
+    name: form.name.trim(),
+    email: form.email.trim(),
+    company: form.company.trim(),
+    adresse: form.adresse.trim(),
   })
   emit('update:modelValue', false)
 }
@@ -79,8 +87,21 @@ function submitClient() {
           v-model="form.company"
           type="text"
           class="input input-bordered w-full"
+          :class="{ 'input-error': errors.company }"
           placeholder="Ex: Acme"
         />
+        <span v-if="errors.company" class="label-text text-xs text-error mt-1">{{ errors.company }}</span>
+      </label>
+      <label class="form-control">
+        <span class="label-text mb-1 font-medium text-base-content/80">Adresse</span>
+        <input
+          v-model="form.adresse"
+          type="text"
+          class="input input-bordered w-full"
+          :class="{ 'input-error': errors.adresse }"
+          placeholder="Ex: 12 rue de la Paix, 75001 Paris"
+        />
+        <span v-if="errors.adresse" class="label-text text-xs text-error mt-1">{{ errors.adresse }}</span>
       </label>
 
       <div class="modal-action mt-1 flex items-center justify-end gap-2">

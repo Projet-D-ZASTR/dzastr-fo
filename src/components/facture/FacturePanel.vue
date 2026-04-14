@@ -44,6 +44,7 @@ function addLine() {
   if (!selectedService.value || lineHours.value <= 0) return
   lines.value.push({
     id: crypto.randomUUID(),
+    serviceId: selectedService.value.id,
     title: selectedService.value.title,
     hourlyRate: Number(selectedService.value.hourlyRate),
     hours: Number(lineHours.value),
