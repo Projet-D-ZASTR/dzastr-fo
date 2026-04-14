@@ -25,6 +25,10 @@ function buildHeaders() {
   if (SERVICE_TOKEN) {
     headers['x-service-token'] = SERVICE_TOKEN
   }
+  const token = getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
   return headers
 }
 
@@ -45,11 +49,11 @@ function normalizeApiBaseUrl(rawUrl) {
 
 const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
 
-async function request(path, payload) {
+async function request(method, path, payload = undefined) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
+    method,
     headers: buildHeaders(),
-    body: JSON.stringify(payload),
+    body: payload !== undefined ? JSON.stringify(payload) : undefined,
   })
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
@@ -59,7 +63,7 @@ async function request(path, payload) {
 }
 
 export async function loginUser({ email, password }) {
-  const data = await request('/secure/login', {
+  const data = await request('POST', '/secure/login', {
     User_Email: email,
     User_Password: password,
   })
@@ -70,7 +74,7 @@ export async function loginUser({ email, password }) {
 }
 
 export async function registerUser({ fullName, email, password }) {
-  const data = await request('/secure/register', {
+  const data = await request('POST', '/secure/register', {
     User_Username: fullName,
     User_Role: 'user',
     User_Email: email,
@@ -120,6 +124,60 @@ export function getAuthUser() {
   } catch {
     return null
   }
+}
+
+export function updateAuthUserSession(nextUser) {
+  if (!nextUser) return
+  const current = getAuthUser() ?? {}
+  localStorage.setItem(
+    AUTH_USER_KEY,
+    JSON.stringify({
+      ...current,
+      ...nextUser,
+      User_Id: nextUser.User_Id ?? current.User_Id ?? null,
+    })
+  )
+}
+
+export async function updateAuthUserProfile(userId, profile) {
+  const data = await request('PUT', `/users/${userId}`, profile)
+  return {
+    User_Id: userId,
+    User_Username: data?.User_Username ?? '',
+    User_Role: data?.User_Role ?? profile?.User_Role ?? 'user',
+    User_Email: data?.User_Email ?? '',
+    User_Entreprise: data?.User_Entreprise ?? '',
+    User_Address: data?.User_Address ?? '',
+    User_IsEntrepreneur: Boolean(data?.User_IsEntrepreneur),
+  }
+}
+
+export async function verifyAuthSession() {
+  const data = await request('GET', '/secure/verify')
+  if (!data?.valid || !data?.user?.User_Id) {
+    throw new Error('Session invalide')
+  }
+  return data.user
+}
+
+export async function findAuthUserIdByEmail(email) {
+  const targetEmail = String(email || '')
+    .trim()
+    .toLowerCase()
+  if (!targetEmail) return null
+
+  const users = await request('GET', '/users')
+  const matched = Array.isArray(users)
+    ? users.find(
+        (user) =>
+          String(user?.User_Email || '')
+            .trim()
+            .toLowerCase() === targetEmail
+      )
+    : null
+
+  const id = Number(matched?.User_Id)
+  return Number.isInteger(id) && id > 0 ? id : null
 }
 
 export function isAuthenticated() {

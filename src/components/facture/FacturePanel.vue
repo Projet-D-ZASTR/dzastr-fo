@@ -29,6 +29,12 @@ const totalTtc = computed(() => Number((totalHt.value + tvaAmount.value).toFixed
 const hasLines = computed(() => lines.value.length > 0)
 const linesContainerStyle = computed(() => ({ maxHeight: `${MAX_VISIBLE_LINES * 2.4}rem` }))
 
+function formatAmount(value) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+    Number(value) || 0
+  )
+}
+
 watch(
   () => props.invoiceData,
   (invoice) => {
@@ -133,7 +139,7 @@ function save(status) {
           <select v-model="selectedServiceId" class="select select-bordered select-sm">
             <option value="" disabled>Sélectionner un service</option>
             <option v-for="service in services" :key="service.id" :value="service.id">
-              {{ service.title }} ({{ service.hourlyRate }} / h)
+              {{ service.title }} ({{ formatAmount(service.hourlyRate) }} / h)
             </option>
           </select>
         </label>
@@ -162,7 +168,7 @@ function save(status) {
           :style="linesContainerStyle"
         >
           <div v-for="line in lines" :key="line.id" class="flex items-center justify-between gap-2">
-            <span>{{ line.title }} · {{ line.hours }}h x {{ line.hourlyRate }}</span>
+            <span>{{ line.title }} · {{ line.hours }}h x {{ formatAmount(line.hourlyRate) }}</span>
             <button
               v-if="isEditableMode"
               type="button"
@@ -177,14 +183,14 @@ function save(status) {
         <div class="divider my-2" />
         <div class="space-y-1 text-right text-sm">
           <p>
-            HT : <span class="font-semibold">{{ totalHt }}</span>
+            HT : <span class="font-semibold">{{ formatAmount(totalHt) }}</span>
           </p>
           <p>
             TVA ({{ isAutoEntrepreneur ? '0%' : '20%' }}) :
-            <span class="font-semibold">{{ tvaAmount }}</span>
+            <span class="font-semibold">{{ formatAmount(tvaAmount) }}</span>
           </p>
           <p>
-            TTC : <span class="font-bold">{{ totalTtc }}</span>
+            TTC : <span class="font-bold">{{ formatAmount(totalTtc) }}</span>
           </p>
         </div>
       </div>

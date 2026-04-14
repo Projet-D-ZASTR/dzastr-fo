@@ -11,8 +11,39 @@ describe('invoice item mapping', () => {
       buildInvoiceItemIds([
         { serviceId: 3, hours: 2 },
         { serviceId: 8, hours: 1 },
-      ]),
+      ])
     ).toEqual([3, 3, 8])
+  })
+
+  it('resolves missing serviceId from title and hourlyRate', () => {
+    const services = [
+      { id: 12, title: 'Design', hourlyRate: 80 },
+      { id: 15, title: 'Dev', hourlyRate: 95 },
+    ]
+
+    expect(
+      buildInvoiceItemIds(
+        [
+          { title: 'Design', hourlyRate: 80, hours: 2 },
+          { title: 'Dev', hourlyRate: 95, hours: 1 },
+        ],
+        services
+      )
+    ).toEqual([12, 12, 15])
+  })
+
+  it('ignores invalid lines when service cannot be resolved', () => {
+    const services = [{ id: 12, title: 'Design', hourlyRate: 80 }]
+
+    expect(
+      buildInvoiceItemIds(
+        [
+          { title: 'Unknown', hourlyRate: 80, hours: 2 },
+          { serviceId: 12, hours: 1 },
+        ],
+        services
+      )
+    ).toEqual([12])
   })
 
   it('rebuilds grouped lines from MO item ids and services', () => {

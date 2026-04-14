@@ -21,6 +21,26 @@ const FRONT_TO_BACKEND = {
 
 const LINES_CACHE_KEY = 'dzastr_invoice_lines'
 
+function normalizeItemIds(itemIds = []) {
+  return itemIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+}
+
+function haveSameItemCounts(left = [], right = []) {
+  const leftNormalized = normalizeItemIds(left)
+  const rightNormalized = normalizeItemIds(right)
+  if (leftNormalized.length !== rightNormalized.length) return false
+
+  const counts = new Map()
+  for (const id of leftNormalized) counts.set(id, (counts.get(id) ?? 0) + 1)
+  for (const id of rightNormalized) {
+    const count = counts.get(id)
+    if (!count) return false
+    if (count === 1) counts.delete(id)
+    else counts.set(id, count - 1)
+  }
+  return counts.size === 0
+}
+
 function getLinesCache() {
   try {
     return JSON.parse(sessionStorage.getItem(LINES_CACHE_KEY) ?? '{}')
@@ -33,13 +53,13 @@ function setLinesCache(cache) {
   sessionStorage.setItem(LINES_CACHE_KEY, JSON.stringify(cache))
 }
 
-export function saveInvoiceLines(invoiceId, { lines, number, isAutoEntrepreneur }) {
+export function saveInvoiceLines(invoiceId, { lines, number, isAutoEntrepreneur, services = [] }) {
   const cache = getLinesCache()
   cache[invoiceId] = {
     lines,
     number,
     isAutoEntrepreneur,
-    itemIds: buildInvoiceItemIds(lines),
+    itemIds: buildInvoiceItemIds(lines, services),
   }
   setLinesCache(cache)
 }
@@ -50,11 +70,24 @@ export function getInvoiceLines(invoiceId) {
 
 function buildFrontendInvoice(raw, services = []) {
   const cached = getInvoiceLines(raw.Facture_Id)
-  const itemIds = cached?.itemIds ?? raw.item_ids ?? []
-  const lines = cached?.lines ?? buildInvoiceLinesFromItemIds(itemIds, services)
+  const rawItemIds = normalizeItemIds(raw.item_ids ?? [])
+  const cachedItemIds = normalizeItemIds(
+    cached?.itemIds ?? buildInvoiceItemIds(cached?.lines ?? [], services)
+  )
+
+  const shouldUseRawItemIds =
+    rawItemIds.length > 0 && !haveSameItemCounts(cachedItemIds, rawItemIds)
+  const itemIds = shouldUseRawItemIds
+    ? rawItemIds
+    : cachedItemIds.length
+      ? cachedItemIds
+      : rawItemIds
+
+  const lines = shouldUseRawItemIds
+    ? buildInvoiceLinesFromItemIds(rawItemIds, services)
+    : (cached?.lines ?? buildInvoiceLinesFromItemIds(itemIds, services))
   const number =
-    cached?.number ??
-    `FAC-${new Date().getFullYear()}-${String(raw.Facture_Id).padStart(6, '0')}`
+    cached?.number ?? `FAC-${new Date().getFullYear()}-${String(raw.Facture_Id).padStart(6, '0')}`
 
   const totals = inferInvoiceTotals(raw.Facture_Prix, lines, cached?.isAutoEntrepreneur ?? null)
 
@@ -80,9 +113,17 @@ export async function fetchInvoices(userId, services = []) {
   return data.map((invoice) => buildFrontendInvoice(invoice, services))
 }
 
-export async function createInvoice({ userId, clientId, lines, ttc, isAutoEntrepreneur, status }) {
+export async function createInvoice({
+  userId,
+  clientId,
+  lines,
+  ttc,
+  isAutoEntrepreneur,
+  status,
+  services = [],
+}) {
   const today = new Date().toISOString().split('T')[0]
-  const itemIds = buildInvoiceItemIds(lines)
+  const itemIds = buildInvoiceItemIds(lines, services)
 
   const raw = await api.post('/invoices/', {
     User_Id: userId,
@@ -101,9 +142,9 @@ export async function createInvoice({ userId, clientId, lines, ttc, isAutoEntrep
   }
 
   const number = `FAC-${new Date().getFullYear()}-${String(finalRaw.Facture_Id).padStart(6, '0')}`
-  saveInvoiceLines(finalRaw.Facture_Id, { lines, number, isAutoEntrepreneur })
+  saveInvoiceLines(finalRaw.Facture_Id, { lines, number, isAutoEntrepreneur, services })
 
-  return buildFrontendInvoice(finalRaw)
+  return buildFrontendInvoice(finalRaw, services)
 }
 
 export async function updateInvoice({
@@ -114,10 +155,11 @@ export async function updateInvoice({
   status,
   number,
   existingItemIds = [],
+  services = [],
 }) {
   const backendStatus = FRONT_TO_BACKEND[status] ?? 'draft'
   const today = new Date().toISOString().split('T')[0]
-  const itemIds = buildInvoiceItemIds(lines)
+  const itemIds = buildInvoiceItemIds(lines, services)
 
   const raw = await api.put(`/invoices/${invoiceId}`, {
     Facture_Prix: ttc,
@@ -126,16 +168,16 @@ export async function updateInvoice({
     item_ids: itemIds.length ? itemIds : existingItemIds,
   })
 
-  saveInvoiceLines(invoiceId, { lines, number, isAutoEntrepreneur })
+  saveInvoiceLines(invoiceId, { lines, number, isAutoEntrepreneur, services })
 
-  return buildFrontendInvoice(raw)
+  return buildFrontendInvoice(raw, services)
 }
 
-export async function updateInvoiceStatus(invoiceId, frontendStatus) {
+export async function updateInvoiceStatus(invoiceId, frontendStatus, services = []) {
   const raw = await api.put(`/invoices/${invoiceId}`, {
     Facture_State: FRONT_TO_BACKEND[frontendStatus] ?? frontendStatus,
   })
-  return buildFrontendInvoice(raw)
+  return buildFrontendInvoice(raw, services)
 }
 
 export async function deleteInvoice(invoiceId) {
