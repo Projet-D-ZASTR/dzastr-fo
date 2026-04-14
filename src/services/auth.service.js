@@ -5,6 +5,19 @@ const SERVICE_TOKEN = import.meta.env.VITE_AUTH_SERVICE_TOKEN ?? ''
 const AUTH_TOKEN_KEY = 'dzastr_auth_token'
 const AUTH_USER_KEY = 'dzastr_auth_user'
 
+/**
+ * Décode le payload d'un JWT sans vérifier la signature (lecture seule côté client).
+ * Le JWT contient User_Id qui n'est pas inclus dans la réponse HTTP login/register.
+ */
+function decodeJwtPayload(token) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(base64))
+  } catch {
+    return null
+  }
+}
+
 function buildHeaders() {
   const headers = {
     'Content-Type': 'application/json',
@@ -74,7 +87,13 @@ export async function registerUser({ fullName, email, password }) {
 
 export function saveAuthSession(accessToken, user) {
   localStorage.setItem(AUTH_TOKEN_KEY, accessToken)
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? null))
+  // User_Id est absent de la réponse HTTP — on le récupère depuis le payload JWT
+  const payload = decodeJwtPayload(accessToken)
+  const enrichedUser = {
+    ...(user ?? {}),
+    User_Id: payload?.User_Id ?? user?.User_Id ?? null,
+  }
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(enrichedUser))
 }
 
 export function clearAuthSession() {
@@ -84,6 +103,23 @@ export function clearAuthSession() {
 
 export function getAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY)
+}
+
+export function getAuthUser() {
+  try {
+    const user = JSON.parse(localStorage.getItem(AUTH_USER_KEY) ?? 'null')
+    // Compat sessions sans User_Id : on le relit depuis le token
+    if (user && !user.User_Id) {
+      const token = getAuthToken()
+      if (token) {
+        const payload = decodeJwtPayload(token)
+        if (payload?.User_Id) user.User_Id = payload.User_Id
+      }
+    }
+    return user
+  } catch {
+    return null
+  }
 }
 
 export function isAuthenticated() {
