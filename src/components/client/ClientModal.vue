@@ -30,7 +30,7 @@ watch(
     form.company = value?.company || ''
     form.adresse = value?.adresse || ''
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 const errors = reactive({ name: '', email: '', company: '', adresse: '' })
@@ -90,7 +90,9 @@ function submitClient() {
           :class="{ 'input-error': errors.company }"
           placeholder="Ex: Acme"
         />
-        <span v-if="errors.company" class="label-text text-xs text-error mt-1">{{ errors.company }}</span>
+        <span v-if="errors.company" class="label-text text-xs text-error mt-1">{{
+          errors.company
+        }}</span>
       </label>
       <label class="form-control">
         <span class="label-text mb-1 font-medium text-base-content/80">Adresse</span>
@@ -101,7 +103,9 @@ function submitClient() {
           :class="{ 'input-error': errors.adresse }"
           placeholder="Ex: 12 rue de la Paix, 75001 Paris"
         />
-        <span v-if="errors.adresse" class="label-text text-xs text-error mt-1">{{ errors.adresse }}</span>
+        <span v-if="errors.adresse" class="label-text text-xs text-error mt-1">{{
+          errors.adresse
+        }}</span>
       </label>
 
       <div class="modal-action mt-1 flex items-center justify-end gap-2">

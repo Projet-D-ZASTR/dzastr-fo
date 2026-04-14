@@ -2,14 +2,33 @@ function roundAmount(value) {
   return Number(Number(value || 0).toFixed(2))
 }
 
-export function buildInvoiceItemIds(lines = []) {
+function resolveServiceId(line, services = []) {
+  const rawId = Number(line?.serviceId)
+  if (Number.isInteger(rawId) && rawId > 0) return rawId
+
+  const title = String(line?.title ?? '').trim()
+  const hourlyRate = Number(line?.hourlyRate ?? 0)
+  if (!title || !Number.isFinite(hourlyRate)) return null
+
+  const matched = services.find(
+    (service) =>
+      String(service?.title ?? '').trim() === title &&
+      Number(service?.hourlyRate ?? 0).toFixed(2) === hourlyRate.toFixed(2)
+  )
+
+  if (!matched) return null
+  const matchedId = Number(matched.id)
+  return Number.isInteger(matchedId) && matchedId > 0 ? matchedId : null
+}
+
+export function buildInvoiceItemIds(lines = [], services = []) {
   const itemIds = []
 
   for (const line of lines) {
-    const serviceId = Number(line.serviceId)
-    const hours = Math.max(0, Math.trunc(Number(line.hours) || 0))
+    const serviceId = resolveServiceId(line, services)
+    const hours = Math.max(0, Math.round(Number(line?.hours) || 0))
 
-    if (!Number.isInteger(serviceId) || serviceId <= 0 || hours === 0) {
+    if (!serviceId || hours === 0) {
       continue
     }
 

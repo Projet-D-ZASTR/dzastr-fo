@@ -1,9 +1,16 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { jsPDF } from 'jspdf'
 import { buildClientInvoiceMeta, getInvoiceStatusLabel } from '../utils/invoice'
-import { clearAuthSession, getAuthUser } from '../services/auth.service'
+import {
+  clearAuthSession,
+  findAuthUserIdByEmail,
+  getAuthUser,
+  updateAuthUserProfile,
+  updateAuthUserSession,
+  verifyAuthSession,
+} from '../services/auth.service'
 import {
   fetchClients,
   createClient,
@@ -24,8 +31,10 @@ import ClientModal from '../components/client/ClientModal.vue'
 import PrestationModal from '../components/prestation/PrestationModal.vue'
 import FacturePanel from '../components/facture/FacturePanel.vue'
 import BaseModal from '../components/ui/BaseModal.vue'
+import ProfileModal from '../components/profile/ProfileModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // ── UI state ─────────────────────────────────────────────────────────────────
 const loading = ref(true)
@@ -37,6 +46,9 @@ let toastTimer = null
 const showClientModal = ref(false)
 const showServiceModal = ref(false)
 const showDeleteClientModal = ref(false)
+const showProfileModal = ref(false)
+const profileSubmitting = ref(false)
+const profileError = ref('')
 
 const selectedClientId = ref(null)
 const selectedInvoiceId = ref(null)
@@ -77,19 +89,19 @@ const clientsWithInvoiceMeta = computed(() =>
   clients.value.map((client) => ({
     ...client,
     ...buildClientInvoiceMeta(invoicesByClient.value[client.id] ?? []),
-  })),
+  }))
 )
 
 const selectedClient = computed(
-  () => clients.value.find((c) => c.id === selectedClientId.value) ?? null,
+  () => clients.value.find((c) => c.id === selectedClientId.value) ?? null
 )
 
 const selectedClientInvoices = computed(() =>
-  selectedClientId.value != null ? (invoicesByClient.value[selectedClientId.value] ?? []) : [],
+  selectedClientId.value != null ? (invoicesByClient.value[selectedClientId.value] ?? []) : []
 )
 
 const selectedInvoice = computed(
-  () => selectedClientInvoices.value.find((inv) => inv.id === selectedInvoiceId.value) ?? null,
+  () => selectedClientInvoices.value.find((inv) => inv.id === selectedInvoiceId.value) ?? null
 )
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -97,7 +109,33 @@ function showToast(message, type = 'info') {
   toastMessage.value = message
   toastType.value = type
   clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => { toastMessage.value = '' }, 4500)
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+  }, 4500)
+}
+
+function getQueryValue(value) {
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+function applyInvoiceSelectionFromQuery() {
+  const clientQuery = getQueryValue(route.query.client)
+  if (!clientQuery) return
+
+  const targetClient = clients.value.find((client) => String(client.id) === String(clientQuery))
+  if (!targetClient) return
+
+  const clientInvs = invoicesByClient.value[targetClient.id] ?? []
+  if (!clientInvs.length) return
+
+  const invoiceQuery = getQueryValue(route.query.invoice)
+  const targetInvoice = invoiceQuery
+    ? clientInvs.find((invoice) => String(invoice.id) === String(invoiceQuery))
+    : null
+
+  selectedClientId.value = targetClient.id
+  selectedInvoiceId.value = targetInvoice?.id ?? clientInvs[clientInvs.length - 1].id
 }
 
 // ── Chargement initial ────────────────────────────────────────────────────────
@@ -122,6 +160,7 @@ async function loadAll() {
     clients.value = clientsData
     services.value = servicesData
     invoices.value = invoicesData
+    applyInvoiceSelectionFromQuery()
   } catch (err) {
     globalError.value = err.message
   } finally {
@@ -149,12 +188,38 @@ async function saveClient(payload) {
       clients.value = clients.value.map((c) => (c.id === payload.id ? updated : c))
       showToast('Client mis à jour.', 'success')
     } else {
-      const created = await createClient(currentUser.value.User_Id, payload)
+      const verified = await verifyAuthSession().catch(() => null)
+      const emailForLookup = currentUser.value?.User_Email ?? verified?.User_Email
+      const fallbackUserId = await findAuthUserIdByEmail(emailForLookup).catch(() => null)
+
+      const resolvedUserId = Number(
+        fallbackUserId ?? verified?.User_Id ?? currentUser.value?.User_Id
+      )
+      if (!Number.isInteger(resolvedUserId) || resolvedUserId <= 0) {
+        throw new Error("Impossible de déterminer l'utilisateur connecté.")
+      }
+
+      currentUser.value = {
+        ...currentUser.value,
+        ...(verified ?? {}),
+        User_Id: resolvedUserId,
+      }
+      updateAuthUserSession(currentUser.value)
+
+      const created = await createClient(resolvedUserId, payload)
       clients.value.push(created)
       showToast('Client créé.', 'success')
     }
   } catch (err) {
-    showToast(err.message, 'error')
+    const message = String(err?.message || '')
+    if (message.includes('(500)')) {
+      showToast(
+        `Création client impossible (500). User_Id utilisé: ${currentUser.value?.User_Id ?? 'N/A'}.`,
+        'error'
+      )
+      return
+    }
+    showToast(message, 'error')
   }
 }
 
@@ -199,6 +264,27 @@ async function addService({ title, hourlyRate }) {
   }
 }
 
+async function saveProfile(payload) {
+  const userId = currentUser.value?.User_Id
+  if (!userId) return
+  profileSubmitting.value = true
+  profileError.value = ''
+  try {
+    const updated = await updateAuthUserProfile(userId, {
+      ...payload,
+      User_Role: currentUser.value?.User_Role ?? 'user',
+    })
+    currentUser.value = updated
+    updateAuthUserSession(updated)
+    showProfileModal.value = false
+    showToast('Profil mis à jour.', 'success')
+  } catch (err) {
+    profileError.value = err.message
+  } finally {
+    profileSubmitting.value = false
+  }
+}
+
 // ── Factures ──────────────────────────────────────────────────────────────────
 function openInvoice(client) {
   selectedClientId.value = client.id
@@ -230,14 +316,33 @@ function closeInvoicePanel() {
   selectedInvoiceId.value = null
 }
 
-async function saveInvoice({ clientId, invoiceId, status, lines, ht, tva, ttc, isAutoEntrepreneur }) {
+async function saveInvoice({
+  clientId,
+  invoiceId,
+  status,
+  lines,
+  ht,
+  tva,
+  ttc,
+  isAutoEntrepreneur,
+}) {
   try {
     const userId = currentUser.value?.User_Id
     if (!userId) return
     const existingInv = invoices.value.find((i) => i.id === invoiceId)
 
     if (existingInv?._isNew) {
-      const saved = await createInvoice({ userId, clientId, lines, ht, tva, ttc, isAutoEntrepreneur, status })
+      const saved = await createInvoice({
+        userId,
+        clientId,
+        lines,
+        ht,
+        tva,
+        ttc,
+        isAutoEntrepreneur,
+        status,
+        services: services.value,
+      })
       invoices.value = invoices.value.filter((i) => i.id !== invoiceId)
       invoices.value.push(saved)
       selectedInvoiceId.value = saved.id
@@ -252,6 +357,7 @@ async function saveInvoice({ clientId, invoiceId, status, lines, ht, tva, ttc, i
         status,
         number: existingInv?.number,
         existingItemIds: existingInv?.itemIds ?? [],
+        services: services.value,
       })
       invoices.value = invoices.value.map((i) => (i.id === invoiceId ? saved : i))
     }
@@ -268,7 +374,7 @@ async function handleUpdateStatus({ clientId, invoiceId, status }) {
       invoices.value = invoices.value.map((i) => (i.id === invoiceId ? { ...i, status } : i))
       return
     }
-    const updated = await updateInvoiceStatus(invoiceId, status)
+    const updated = await updateInvoiceStatus(invoiceId, status, services.value)
     invoices.value = invoices.value.map((i) => (i.id === invoiceId ? { ...i, ...updated } : i))
     showToast('Statut mis à jour.', 'success')
   } catch (err) {
@@ -291,7 +397,9 @@ function downloadInvoicePdf(clientId) {
 
   const formatDate = (value) => new Date(value).toLocaleDateString('fr-FR')
   const formatAmount = (value) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0)
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+      Number(value) || 0
+    )
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -327,7 +435,10 @@ function downloadInvoicePdf(clientId) {
   if (client.company) doc.text(client.company, 14, y)
   doc.text(freelancerCompany, 110, y)
   y += 5
-  if (client.adresse) { doc.text(client.adresse, 14, y); y += 5 }
+  if (client.adresse) {
+    doc.text(client.adresse, 14, y)
+    y += 5
+  }
   y += 5
 
   doc.setFont('helvetica', 'bold')
@@ -335,7 +446,8 @@ function downloadInvoicePdf(clientId) {
   doc.setFont('helvetica', 'normal')
   doc.text(
     invoice.isAutoEntrepreneur ? 'Régime : Auto-entrepreneur (TVA 0%)' : 'Régime : TVA 20%',
-    110, y,
+    110,
+    y
   )
   y += 8
 
@@ -355,7 +467,10 @@ function downloadInvoicePdf(clientId) {
   if (lines.length) {
     for (const line of lines) {
       const lineTotal = Number(line.total ?? Number(line.hours) * Number(line.hourlyRate))
-      if (y > 250) { doc.addPage(); y = 20 }
+      if (y > 250) {
+        doc.addPage()
+        y = 20
+      }
       doc.text(String(line.title ?? '-'), 16, y)
       doc.text(String(line.hours ?? 0), 108, y)
       doc.text(formatAmount(line.hourlyRate ?? 0), 135, y)
@@ -398,7 +513,11 @@ function logout() {
 
 <template>
   <main class="flex min-h-screen min-h-[100dvh] flex-col bg-base-100">
-    <AppNavbar @open-service-modal="showServiceModal = true" @logout="logout" />
+    <AppNavbar
+      @open-service-modal="showServiceModal = true"
+      @open-profile="showProfileModal = true"
+      @logout="logout"
+    />
 
     <div v-if="loading" class="flex flex-1 items-center justify-center">
       <span class="loading loading-spinner loading-lg text-secondary" />
@@ -426,10 +545,7 @@ function logout() {
       <button class="btn btn-outline btn-sm" @click="loadAll">Réessayer</button>
     </div>
 
-    <div
-      v-else
-      class="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4"
-    >
+    <div v-else class="flex min-h-0 flex-1 flex-col px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4">
       <div
         class="flex min-h-0 w-full flex-1 flex-col gap-4 sm:gap-5 xl:flex-row xl:items-stretch xl:gap-6"
       >
@@ -462,6 +578,13 @@ function logout() {
 
     <ClientModal v-model="showClientModal" :client="editingClient" @save="saveClient" />
     <PrestationModal v-model="showServiceModal" @save="addService" />
+    <ProfileModal
+      v-model="showProfileModal"
+      :user="currentUser"
+      :submitting="profileSubmitting"
+      :error-message="profileError"
+      @save="saveProfile"
+    />
     <BaseModal v-model="showDeleteClientModal" title="Confirmer la suppression">
       <div class="space-y-4">
         <p class="text-sm text-base-content/80">
