@@ -11,7 +11,7 @@ import {
   updateAuthUserSession,
 } from '../services/auth.service'
 import { fetchClients } from '../services/client.service'
-import { fetchInvoices } from '../services/invoice.service'
+import { fetchInvoices, exportInvoicesCsv } from '../services/invoice.service'
 import { fetchServices } from '../services/service.service'
 import { getInvoiceStatusLabel } from '../utils/invoice'
 
@@ -49,6 +49,14 @@ function goToCreateService() {
     path: '/services',
     query: { create: '1' },
   })
+}
+
+async function handleExportInvoicesCsv() {
+  try {
+    await exportInvoicesCsv()
+  } catch (err) {
+    globalError.value = err.message
+  }
 }
 
 function openInvoice(invoice) {
@@ -140,9 +148,33 @@ onMounted(loadInvoicesPage)
 
     <section v-else class="flex flex-1 flex-col px-4 pb-6 pt-4 sm:px-6 sm:pb-8">
       <div class="rounded-box border border-base-300 bg-base-100 shadow-sm">
-        <div class="border-b border-base-200 px-4 py-3 sm:px-6">
-          <h1 class="text-xl font-bold text-base-content">Factures créées</h1>
-          <p class="text-sm text-base-content/70">{{ invoices.length }} facture(s) trouvée(s)</p>
+        <div class="flex items-center justify-between border-b border-base-200 px-4 py-3 sm:px-6">
+          <div>
+            <h1 class="text-xl font-bold text-base-content">Factures créées</h1>
+            <p class="text-sm text-base-content/70">{{ invoices.length }} facture(s) trouvée(s)</p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70"
+            @click="handleExportInvoicesCsv"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4 shrink-0"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+              />
+            </svg>
+            Exporter CSV
+          </button>
         </div>
 
         <div class="overflow-x-auto">

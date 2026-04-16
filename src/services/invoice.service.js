@@ -1,4 +1,4 @@
-import { api } from './api.service'
+import { api, apiDownload } from './api.service'
 import {
   buildInvoiceItemIds,
   buildInvoiceLinesFromItemIds,
@@ -185,4 +185,8 @@ export async function updateInvoiceStatus(invoiceId, frontendStatus, services = 
 
 export async function deleteInvoice(invoiceId) {
   await api.delete(`/invoices/${invoiceId}`)
+}
+
+export async function exportInvoicesCsv() {
+  await apiDownload('/invoices/export/csv', 'factures.csv')
 }
