@@ -5,6 +5,12 @@ const SERVICE_TOKEN = import.meta.env.VITE_AUTH_SERVICE_TOKEN ?? ''
 const AUTH_TOKEN_KEY = 'dzastr_auth_token'
 const AUTH_USER_KEY = 'dzastr_auth_user'
 
+// ── Init logs ────────────────────────────────────────────────────────────────
+console.group('[auth] Initialisation')
+console.log('RAW VITE_AUTH_API_URL :', RAW_API_BASE_URL)
+console.log('SERVICE_TOKEN présent :', Boolean(SERVICE_TOKEN))
+console.groupEnd()
+
 /**
  * Décode le payload d'un JWT sans vérifier la signature (lecture seule côté client).
  * Le JWT contient User_Id qui n'est pas inclus dans la réponse HTTP login/register.
@@ -50,15 +56,44 @@ function normalizeApiBaseUrl(rawUrl) {
 const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
 
 async function request(method, path, payload = undefined) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: buildHeaders(),
-    body: payload !== undefined ? JSON.stringify(payload) : undefined,
+  const url = `${API_BASE_URL}${path}`
+  const t0 = performance.now()
+  console.group(`[auth] ${method} ${url}`)
+  if (payload !== undefined) {
+    const safePayload = { ...payload }
+    if (safePayload.User_Password) safePayload.User_Password = '***'
+    console.log('Body:', safePayload)
+  }
+
+  let response
+  try {
+    response = await fetch(url, {
+      method,
+      headers: buildHeaders(),
+      body: payload !== undefined ? JSON.stringify(payload) : undefined,
+    })
+  } catch (err) {
+    console.error('Network error:', err?.message)
+    console.groupEnd()
+    throw new Error('Connexion au service auth impossible.', { cause: err })
+  }
+
+  const elapsed = Math.round(performance.now() - t0)
+  console.log(`Status: ${response.status} ${response.statusText} (${elapsed}ms)`)
+  const data = await response.json().catch((e) => {
+    console.warn('Impossible de parser le JSON:', e?.message)
+    return {}
   })
-  const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    console.error('Erreur:', data)
+    console.groupEnd()
     throw new Error(data?.message || 'Erreur serveur')
   }
+  console.log('Réponse OK:', {
+    ...data,
+    accessToken: data?.accessToken ? '…' + data.accessToken.slice(-6) : undefined,
+  })
+  console.groupEnd()
   return data
 }
 

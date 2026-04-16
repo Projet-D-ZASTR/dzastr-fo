@@ -153,7 +153,7 @@ async function loadAll() {
 
     const [clientsData, servicesData] = await Promise.all([
       fetchClients(user.User_Id),
-      fetchServices(),
+      fetchServices(user.User_Id),
     ])
     const invoicesData = await fetchInvoices(user.User_Id, servicesData)
 
@@ -256,7 +256,7 @@ function cancelDeleteClient() {
 // ── Services ──────────────────────────────────────────────────────────────────
 async function addService({ title, hourlyRate }) {
   try {
-    const created = await createService({ title, hourlyRate })
+    const created = await createService(currentUser.value?.User_Id, { title, hourlyRate })
     services.value.push(created)
     showToast('Service créé.', 'success')
   } catch (err) {
