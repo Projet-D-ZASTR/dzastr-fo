@@ -202,9 +202,11 @@ function getInvoiceIconClass(status) {
                       class="h-3 w-3 shrink-0"
                       aria-hidden="true"
                     >
-                      <path
-                        d="M14.74 9l-.346 9m-4.008 0L7.58 9m12.84 0l-.001-1.73a1.5 1.5 0 00-1.356-1.499l-1.102-.16m12.84 0h-2.5M4.25 7.5h15M10.5 3.75h3a1.5 1.5 0 011.5 1.5v.75m-6 0V5.25a1.5 1.5 0 011.5-1.5z"
-                      />
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4.5A1.5 1.5 0 019.5 3h5A1.5 1.5 0 0116 4.5V6" />
+                      <path d="M19 6l-1 13a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
                     </svg>
                   </button>
                   <button
