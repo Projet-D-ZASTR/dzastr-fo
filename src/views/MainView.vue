@@ -424,16 +424,27 @@ function buildInvoicePdfDoc(clientId) {
 
   if (userLogoDataUrl.value) {
     try {
-      doc.addImage(userLogoDataUrl.value, 14, y - 6, 30, 18)
+      const img = new Image()
+      img.src = userLogoDataUrl.value
+      const maxW = 50
+      const maxH = 22
+      const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 2
+      let logoW = maxW
+      let logoH = logoW / ratio
+      if (logoH > maxH) {
+        logoH = maxH
+        logoW = logoH * ratio
+      }
+      doc.addImage(userLogoDataUrl.value, 14, y - 4, logoW, logoH)
+      y += logoH + 4
     } catch {
       // logo ignoré si format non supporté
     }
-    y += 14
   }
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text('FACTURE', userLogoDataUrl.value ? 50 : 14, userLogoDataUrl.value ? y - 10 : y)
+  doc.text('FACTURE', 14, y)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.text(`No ${invoice.number}`, rightX, y, { align: 'right' })
