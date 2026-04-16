@@ -10,6 +10,9 @@ function toFrontend(s) {
 
 export async function fetchServices(userId) {
   const data = await api.get('/services/')
+  if (!Array.isArray(data)) {
+    throw new Error('Format API invalide pour les services (tableau attendu).')
+  }
   if (userId != null) return data.filter((s) => s.Service_UserId === userId).map(toFrontend)
   return data.map(toFrontend)
 }

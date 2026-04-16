@@ -110,6 +110,9 @@ function buildFrontendInvoice(raw, services = []) {
 
 export async function fetchInvoices(userId, services = []) {
   const data = await api.get(`/invoices/?User_Id=${userId}`)
+  if (!Array.isArray(data)) {
+    throw new Error('Format API invalide pour les factures (tableau attendu).')
+  }
   return data.map((invoice) => buildFrontendInvoice(invoice, services))
 }
 
