@@ -17,8 +17,16 @@ function normalizeApiBaseUrl(rawUrl) {
 
 export const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
 
-console.log('[api] BASE_URL:', API_BASE_URL)
-console.log('[api] SERVICE_TOKEN present:', Boolean(SERVICE_TOKEN))
+// ── Init logs ────────────────────────────────────────────────────────────────
+console.group('[api] Initialisation')
+console.log('RAW VITE_MO_API_URL    :', RAW_API_BASE_URL)
+console.log('API_BASE_URL (normalisé):', API_BASE_URL)
+console.log('SERVICE_TOKEN présent  :', Boolean(SERVICE_TOKEN))
+console.log('SERVICE_TOKEN (4 chars):', SERVICE_TOKEN ? SERVICE_TOKEN.slice(0, 4) + '…' : '(vide)')
+console.log('Mode                   :', import.meta.env.MODE)
+console.log('DEV                    :', import.meta.env.DEV)
+console.log('PROD                   :', import.meta.env.PROD)
+console.groupEnd()
 
 function buildHeaders() {
   const headers = { 'Content-Type': 'application/json' }
@@ -43,31 +51,63 @@ function mapHttpError(response, data) {
 
 export async function apiRequest(method, path, body = undefined) {
   const url = `${API_BASE_URL}${path}`
-  console.log(`[api] ${method} ${url}`)
+  const headers = buildHeaders()
+  const t0 = performance.now()
+
+  console.group(`[api] ${method} ${url}`)
+  console.log('Headers:', {
+    'Content-Type': headers['Content-Type'],
+    'x-service-token': headers['x-service-token']
+      ? headers['x-service-token'].slice(0, 4) + '…'
+      : '(absent)',
+    Authorization: headers['Authorization']
+      ? 'Bearer …' + headers['Authorization'].slice(-6)
+      : '(absent)',
+  })
+  if (body !== undefined) console.log('Body envoyé:', body)
 
   let response
   try {
     response = await fetch(url, {
       method,
-      headers: buildHeaders(),
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch (err) {
-    console.error(`[api] Network error on ${method} ${url}:`, err?.message)
+    console.error('Network error (fetch a échoué):', err?.message)
+    console.error('→ dzastr-mo injoignable ou CORS bloqué')
+    console.groupEnd()
     throw new Error(
       'Connexion au serveur impossible. Vérifiez que dzastr-mo tourne et que VITE_MO_API_URL est correct.'
     )
   }
 
-  console.log(`[api] ${method} ${url} → ${response.status}`)
+  const elapsed = Math.round(performance.now() - t0)
+  console.log(`Status: ${response.status} ${response.statusText} (${elapsed}ms)`)
+  console.log('Response headers:', {
+    'content-type': response.headers.get('content-type'),
+    'x-request-id': response.headers.get('x-request-id'),
+  })
 
-  if (response.status === 204) return null
+  if (response.status === 204) {
+    console.log('→ 204 No Content')
+    console.groupEnd()
+    return null
+  }
 
-  const data = await response.json().catch(() => ({}))
+  const data = await response.json().catch((e) => {
+    console.warn('→ Impossible de parser le JSON de la réponse:', e?.message)
+    return {}
+  })
+
   if (!response.ok) {
-    console.error(`[api] Error ${response.status} on ${method} ${url}:`, data)
+    console.error(`→ Erreur ${response.status}:`, data)
+    console.groupEnd()
     throw new Error(mapHttpError(response, data))
   }
+
+  console.log('→ Réponse OK:', Array.isArray(data) ? `[${data.length} items]` : data)
+  console.groupEnd()
   return data
 }
 
