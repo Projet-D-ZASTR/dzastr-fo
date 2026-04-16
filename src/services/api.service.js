@@ -17,6 +17,9 @@ function normalizeApiBaseUrl(rawUrl) {
 
 export const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
 
+console.log('[api] BASE_URL:', API_BASE_URL)
+console.log('[api] SERVICE_TOKEN present:', Boolean(SERVICE_TOKEN))
+
 function buildHeaders() {
   const headers = { 'Content-Type': 'application/json' }
   if (SERVICE_TOKEN) headers['x-service-token'] = SERVICE_TOKEN
@@ -39,23 +42,30 @@ function mapHttpError(response, data) {
 }
 
 export async function apiRequest(method, path, body = undefined) {
+  const url = `${API_BASE_URL}${path}`
+  console.log(`[api] ${method} ${url}`)
+
   let response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(url, {
       method,
       headers: buildHeaders(),
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
-  } catch {
+  } catch (err) {
+    console.error(`[api] Network error on ${method} ${url}:`, err?.message)
     throw new Error(
       'Connexion au serveur impossible. Vérifiez que dzastr-mo tourne et que VITE_MO_API_URL est correct.'
     )
   }
 
+  console.log(`[api] ${method} ${url} → ${response.status}`)
+
   if (response.status === 204) return null
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    console.error(`[api] Error ${response.status} on ${method} ${url}:`, data)
     throw new Error(mapHttpError(response, data))
   }
   return data
