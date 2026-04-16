@@ -111,15 +111,25 @@ export async function apiRequest(method, path, body = undefined) {
     return null
   }
 
+  const contentType = (response.headers.get('content-type') || '').toLowerCase()
+  const isJson = contentType.includes('application/json')
   const rawText = await response.text().catch(() => '')
   console.log('Response body (brut)    :', rawText.slice(0, 500))
 
   let data = {}
   try {
-    data = JSON.parse(rawText)
+    data = isJson ? JSON.parse(rawText) : {}
   } catch (e) {
     console.warn('⚠ Impossible de parser le JSON:', e?.message)
     console.warn("→ Le serveur a retourné du non-JSON (HTML d'erreur nginx ?)")
+  }
+
+  if (!isJson) {
+    console.error('❌ Réponse non JSON reçue depuis /mo-api')
+    console.groupEnd()
+    throw new Error(
+      'Réponse backend invalide (non JSON). Vérifiez MO_API_UPSTREAM et MO_API_UPSTREAM_SCHEME sur Render.'
+    )
   }
 
   if (!response.ok) {
@@ -128,7 +138,8 @@ export async function apiRequest(method, path, body = undefined) {
     throw new Error(mapHttpError(response, data))
   }
 
-  console.log('✅ Réponse OK:', Array.isArray(data) ? `[${data.length} items]` : data)
+  const itemsCount = Array.isArray(data) ? data.length : null
+  console.log('✅ Réponse OK:', itemsCount === null ? data : `[${itemsCount} items]`)
   console.groupEnd()
   return data
 }
