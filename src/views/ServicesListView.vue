@@ -54,7 +54,7 @@ async function loadServicesPage() {
       return
     }
     currentUser.value = user
-    services.value = await fetchServices()
+    services.value = await fetchServices(user.User_Id)
     if (route.query.create === '1') {
       showServiceModal.value = true
     }
@@ -67,7 +67,7 @@ async function loadServicesPage() {
 
 async function addService({ title, hourlyRate }) {
   try {
-    const created = await createService({ title, hourlyRate })
+    const created = await createService(currentUser.value?.User_Id, { title, hourlyRate })
     services.value.push(created)
     showToast('Service créé.', 'success')
   } catch (err) {
