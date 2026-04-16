@@ -1,9 +1,12 @@
 import { api, apiDownload } from './api.service'
+import { withCache, cacheInvalidatePrefix } from './cache.service'
 import {
   buildInvoiceItemIds,
   buildInvoiceLinesFromItemIds,
   inferInvoiceTotals,
 } from '../utils/invoice-items'
+
+const TTL = 2 * 60 * 1000
 
 const BACKEND_TO_FRONT = {
   draft: 'brouillon',
@@ -109,11 +112,13 @@ function buildFrontendInvoice(raw, services = []) {
 }
 
 export async function fetchInvoices(userId, services = []) {
-  const data = await api.get(`/invoices/?User_Id=${userId}`)
-  if (!Array.isArray(data)) {
-    throw new Error('Format API invalide pour les factures (tableau attendu).')
-  }
-  return data.map((invoice) => buildFrontendInvoice(invoice, services))
+  return withCache(`invoices:${userId}`, async () => {
+    const data = await api.get(`/invoices/?User_Id=${userId}`)
+    if (!Array.isArray(data)) {
+      throw new Error('Format API invalide pour les factures (tableau attendu).')
+    }
+    return data.map((invoice) => buildFrontendInvoice(invoice, services))
+  }, TTL)
 }
 
 export async function createInvoice({
@@ -146,6 +151,7 @@ export async function createInvoice({
 
   const number = `FAC-${new Date().getFullYear()}-${String(finalRaw.Facture_Id).padStart(6, '0')}`
   saveInvoiceLines(finalRaw.Facture_Id, { lines, number, isAutoEntrepreneur, services })
+  cacheInvalidatePrefix('invoices:')
 
   return buildFrontendInvoice(finalRaw, services)
 }
@@ -172,6 +178,7 @@ export async function updateInvoice({
   })
 
   saveInvoiceLines(invoiceId, { lines, number, isAutoEntrepreneur, services })
+  cacheInvalidatePrefix('invoices:')
 
   return buildFrontendInvoice(raw, services)
 }
@@ -180,11 +187,13 @@ export async function updateInvoiceStatus(invoiceId, frontendStatus, services = 
   const raw = await api.put(`/invoices/${invoiceId}`, {
     Facture_State: FRONT_TO_BACKEND[frontendStatus] ?? frontendStatus,
   })
+  cacheInvalidatePrefix('invoices:')
   return buildFrontendInvoice(raw, services)
 }
 
 export async function deleteInvoice(invoiceId) {
   await api.delete(`/invoices/${invoiceId}`)
+  cacheInvalidatePrefix('invoices:')
 }
 
 export async function exportInvoicesCsv() {

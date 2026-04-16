@@ -1,4 +1,7 @@
 import { api } from './api.service'
+import { withCache, cacheInvalidate, cacheInvalidatePrefix } from './cache.service'
+
+const TTL = 5 * 60 * 1000
 
 function toFrontend(s) {
   return {
@@ -9,12 +12,14 @@ function toFrontend(s) {
 }
 
 export async function fetchServices(userId) {
-  const data = await api.get('/services/')
-  if (!Array.isArray(data)) {
-    throw new Error('Format API invalide pour les services (tableau attendu).')
-  }
-  if (userId != null) return data.filter((s) => s.Service_UserId === userId).map(toFrontend)
-  return data.map(toFrontend)
+  return withCache(`services:${userId}`, async () => {
+    const data = await api.get('/services/')
+    if (!Array.isArray(data)) {
+      throw new Error('Format API invalide pour les services (tableau attendu).')
+    }
+    if (userId != null) return data.filter((s) => s.Service_UserId === userId).map(toFrontend)
+    return data.map(toFrontend)
+  }, TTL)
 }
 
 export async function createService(userId, { title, hourlyRate }) {
@@ -23,6 +28,7 @@ export async function createService(userId, { title, hourlyRate }) {
     Service_Name: title,
     Service_PriceHour: hourlyRate,
   })
+  cacheInvalidate(`services:${userId}`)
   return toFrontend(data)
 }
 
@@ -31,9 +37,13 @@ export async function updateService(serviceId, { title, hourlyRate }) {
     Service_Name: title,
     Service_PriceHour: hourlyRate,
   })
+  cacheInvalidatePrefix('services:')
+  cacheInvalidatePrefix('invoices:')
   return toFrontend(data)
 }
 
 export async function deleteService(serviceId) {
   await api.delete(`/services/${serviceId}?confirme=true`)
+  cacheInvalidatePrefix('services:')
+  cacheInvalidatePrefix('invoices:')
 }

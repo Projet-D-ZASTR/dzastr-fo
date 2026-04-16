@@ -1,4 +1,7 @@
 import { api, apiDownload } from './api.service'
+import { withCache, cacheInvalidate, cacheInvalidatePrefix } from './cache.service'
+
+const TTL = 5 * 60 * 1000
 
 function toFrontend(c) {
   return {
@@ -11,11 +14,13 @@ function toFrontend(c) {
 }
 
 export async function fetchClients(userId) {
-  const data = await api.get('/clients/')
-  if (!Array.isArray(data)) {
-    throw new Error('Format API invalide pour les clients (tableau attendu).')
-  }
-  return data.filter((c) => c.User_Id === userId).map(toFrontend)
+  return withCache(`clients:${userId}`, async () => {
+    const data = await api.get('/clients/')
+    if (!Array.isArray(data)) {
+      throw new Error('Format API invalide pour les clients (tableau attendu).')
+    }
+    return data.filter((c) => c.User_Id === userId).map(toFrontend)
+  }, TTL)
 }
 
 export async function createClient(userId, { name, email, company, adresse }) {
@@ -26,6 +31,7 @@ export async function createClient(userId, { name, email, company, adresse }) {
     email,
     adresse,
   })
+  cacheInvalidate(`clients:${userId}`)
   return toFrontend(data)
 }
 
@@ -36,11 +42,13 @@ export async function updateClient(clientId, { name, email, company, adresse }) 
     email,
     adresse,
   })
+  cacheInvalidatePrefix('clients:')
   return toFrontend(data)
 }
 
 export async function deleteClient(clientId) {
   await api.delete(`/clients/${clientId}?confirme=true`)
+  cacheInvalidatePrefix('clients:')
 }
 
 export async function exportClientsCsv() {
