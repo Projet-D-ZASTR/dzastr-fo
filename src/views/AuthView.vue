@@ -59,10 +59,12 @@ async function onRegister(payload) {
 </script>
 
 <template>
-  <main class="min-h-screen p-4">
-    <section class="h-[calc(100vh-2rem)] w-full">
-      <div class="grid h-full w-full overflow-hidden" style="grid-template-columns: 45% 55%">
-        <aside class="flex h-full min-h-0 flex-col p-4 text-primary-content">
+  <main class="min-h-screen bg-base-100 p-0 sm:p-4">
+    <section class="min-h-screen w-full sm:h-[calc(100vh-2rem)]">
+      <div
+        class="grid min-h-screen w-full bg-white sm:min-h-0 sm:overflow-hidden sm:rounded-[2rem] sm:border sm:border-base-300/60 sm:bg-base-100 lg:h-full lg:grid-cols-[45%_55%]"
+      >
+        <aside class="hidden h-full min-h-0 flex-col p-4 text-primary-content lg:flex">
           <div
             class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-box border border-base-300/20 p-6"
           >
@@ -113,7 +115,9 @@ async function onRegister(payload) {
           </div>
         </aside>
 
-        <div class="flex h-full min-h-0 items-center bg-white p-8 sm:p-10 lg:p-12">
+        <div
+          class="flex min-h-screen items-center bg-white px-5 py-10 sm:min-h-0 sm:px-8 sm:py-12 lg:h-full lg:p-12"
+        >
           <div class="mx-auto w-full max-w-md">
             <LoginForm
               v-if="!isRegister"

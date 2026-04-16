@@ -12,6 +12,7 @@ const emit = defineEmits([
   'delete-client',
   'create-invoice',
   'view-invoices',
+  'export-csv',
 ])
 
 const invoiceStatusMap = {
@@ -48,26 +49,50 @@ function getInvoiceIconClass(status) {
           facture en un clic.
         </p>
       </div>
-      <button
-        type="button"
-        class="btn btn-outline btn-sm w-full shrink-0 gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
-        @click="emit('add-client')"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-4 w-4 shrink-0"
-          aria-hidden="true"
+      <div class="flex shrink-0 gap-2">
+        <button
+          type="button"
+          class="btn btn-outline btn-sm w-full gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
+          @click="emit('export-csv')"
         >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        Ajouter un client
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4 shrink-0"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+            />
+          </svg>
+          Exporter CSV
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline btn-sm w-full gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
+          @click="emit('add-client')"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Ajouter un client
+        </button>
+      </div>
     </div>
 
     <div class="card overflow-hidden border border-base-200 bg-base-100 shadow-sm">
@@ -177,9 +202,11 @@ function getInvoiceIconClass(status) {
                       class="h-3 w-3 shrink-0"
                       aria-hidden="true"
                     >
-                      <path
-                        d="M14.74 9l-.346 9m-4.008 0L7.58 9m12.84 0l-.001-1.73a1.5 1.5 0 00-1.356-1.499l-1.102-.16m12.84 0h-2.5M4.25 7.5h15M10.5 3.75h3a1.5 1.5 0 011.5 1.5v.75m-6 0V5.25a1.5 1.5 0 011.5-1.5z"
-                      />
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4.5A1.5 1.5 0 019.5 3h5A1.5 1.5 0 0116 4.5V6" />
+                      <path d="M19 6l-1 13a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
                     </svg>
                   </button>
                   <button

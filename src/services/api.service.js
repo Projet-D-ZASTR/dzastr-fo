@@ -150,3 +150,44 @@ export const api = {
   put: (path, body) => apiRequest('PUT', path, body),
   delete: (path) => apiRequest('DELETE', path),
 }
+
+// Pour les réponses binaires (images, CSV)
+export async function apiGetBlob(path) {
+  const url = `${API_BASE_URL}${path}`
+  const response = await fetch(url, { headers: buildHeaders() })
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`Erreur ${response.status}`)
+  return response.blob()
+}
+
+// Pour les envois multipart/form-data (upload fichier)
+export async function apiFetch(method, path, formData) {
+  const url = `${API_BASE_URL}${path}`
+  const headers = buildHeaders()
+  delete headers['Content-Type'] // le navigateur le gère pour multipart
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: formData ?? undefined,
+  })
+  if (response.status === 204) return null
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data?.detail || `Erreur ${response.status}`)
+  return data
+}
+
+// Pour télécharger un fichier (CSV, PDF…)
+export async function apiDownload(path, filename) {
+  const url = `${API_BASE_URL}${path}`
+  const response = await fetch(url, { headers: buildHeaders() })
+  if (!response.ok) throw new Error(`Erreur téléchargement (${response.status})`)
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(objectUrl)
+}
