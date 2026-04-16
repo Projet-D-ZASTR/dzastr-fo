@@ -139,4 +139,3 @@ export const api = {
   put: (path, body) => apiRequest('PUT', path, body),
   delete: (path) => apiRequest('DELETE', path),
 }
-
