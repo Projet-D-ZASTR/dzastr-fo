@@ -12,6 +12,7 @@ const emit = defineEmits([
   'delete-client',
   'create-invoice',
   'view-invoices',
+  'export-csv',
 ])
 
 const invoiceStatusMap = {
@@ -48,26 +49,50 @@ function getInvoiceIconClass(status) {
           facture en un clic.
         </p>
       </div>
-      <button
-        type="button"
-        class="btn btn-outline btn-sm w-full shrink-0 gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
-        @click="emit('add-client')"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-4 w-4 shrink-0"
-          aria-hidden="true"
+      <div class="flex shrink-0 gap-2">
+        <button
+          type="button"
+          class="btn btn-outline btn-sm w-full gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
+          @click="emit('export-csv')"
         >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        Ajouter un client
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4 shrink-0"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+            />
+          </svg>
+          Exporter CSV
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline btn-sm w-full gap-2 border-base-300 bg-base-100 text-base-content/80 shadow-none hover:border-base-300 hover:bg-base-200/70 sm:w-auto"
+          @click="emit('add-client')"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Ajouter un client
+        </button>
+      </div>
     </div>
 
     <div class="card overflow-hidden border border-base-200 bg-base-100 shadow-sm">

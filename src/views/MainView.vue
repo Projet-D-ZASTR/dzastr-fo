@@ -16,6 +16,7 @@ import {
   createClient,
   updateClient,
   deleteClient as apiDeleteClient,
+  exportClientsCsv,
 } from '../services/client.service'
 import { fetchServices, createService } from '../services/service.service'
 import {
@@ -24,6 +25,8 @@ import {
   updateInvoice,
   updateInvoiceStatus,
 } from '../services/invoice.service'
+import { getLogo } from '../services/logo.service'
+import { sendInvoiceEmail } from '../services/email.service'
 import AppNavbar from '../components/navbar/AppNavbar.vue'
 import AppFooter from '../components/footer/AppFooter.vue'
 import ClientTable from '../components/client/ClientTable.vue'
@@ -32,6 +35,7 @@ import PrestationModal from '../components/prestation/PrestationModal.vue'
 import FacturePanel from '../components/facture/FacturePanel.vue'
 import BaseModal from '../components/ui/BaseModal.vue'
 import ProfileModal from '../components/profile/ProfileModal.vue'
+import EmailModal from '../components/facture/EmailModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -54,6 +58,13 @@ const selectedClientId = ref(null)
 const selectedInvoiceId = ref(null)
 const editingClient = ref(null)
 const pendingDeleteClientId = ref(null)
+
+const userLogoDataUrl = ref(null)
+
+const showEmailModal = ref(false)
+const emailSubmitting = ref(false)
+const emailError = ref('')
+const emailClientId = ref(null)
 
 // ── Données ──────────────────────────────────────────────────────────────────
 const currentUser = ref(null)
@@ -161,6 +172,11 @@ async function loadAll() {
     services.value = servicesData
     invoices.value = invoicesData
     applyInvoiceSelectionFromQuery()
+    getLogo()
+      .then((url) => {
+        userLogoDataUrl.value = url
+      })
+      .catch(() => {})
   } catch (err) {
     globalError.value = err.message
   } finally {
@@ -383,7 +399,7 @@ async function handleUpdateStatus({ clientId, invoiceId, status }) {
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
-function downloadInvoicePdf(clientId) {
+function buildInvoicePdfDoc(clientId) {
   const client = clients.value.find((c) => c.id === clientId)
   const invoiceList = invoicesByClient.value[clientId] ?? []
   const invoice =
@@ -406,9 +422,18 @@ function downloadInvoicePdf(clientId) {
   const rightX = pageWidth - 20
   let y = 18
 
+  if (userLogoDataUrl.value) {
+    try {
+      doc.addImage(userLogoDataUrl.value, 14, y - 6, 30, 18)
+    } catch {
+      // logo ignoré si format non supporté
+    }
+    y += 14
+  }
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
-  doc.text('FACTURE', 14, y)
+  doc.text('FACTURE', userLogoDataUrl.value ? 50 : 14, userLogoDataUrl.value ? y - 10 : y)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.text(`No ${invoice.number}`, rightX, y, { align: 'right' })
@@ -501,7 +526,55 @@ function downloadInvoicePdf(clientId) {
   doc.text('TTC', 130, y)
   doc.text(formatAmount(invoice.ttc ?? invoice.total), rightX, y, { align: 'right' })
 
+  return { doc, invoice }
+}
+
+function downloadInvoicePdf(clientId) {
+  const result = buildInvoicePdfDoc(clientId)
+  if (!result) return
+  const { doc, invoice } = result
   doc.save(`facture-${invoice.number}.pdf`)
+}
+
+// ── Email ─────────────────────────────────────────────────────────────────────
+function openEmailModal(clientId) {
+  emailClientId.value = clientId
+  emailError.value = ''
+  showEmailModal.value = true
+}
+
+async function handleSendEmail({ to, cc, subject, message }) {
+  const result = buildInvoicePdfDoc(emailClientId.value)
+  if (!result) return
+  const { doc, invoice } = result
+  emailSubmitting.value = true
+  emailError.value = ''
+  try {
+    const pdfBlob = doc.output('blob')
+    await sendInvoiceEmail({
+      to,
+      cc,
+      subject,
+      message,
+      pdfBlob,
+      filename: `facture-${invoice.number}.pdf`,
+    })
+    showEmailModal.value = false
+    showToast('Email envoyé avec succès.', 'success')
+  } catch (err) {
+    emailError.value = err.message
+  } finally {
+    emailSubmitting.value = false
+  }
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+async function handleExportCsv() {
+  try {
+    await exportClientsCsv()
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -557,6 +630,7 @@ function logout() {
           @delete-client="deleteClient"
           @create-invoice="openInvoice"
           @view-invoices="viewInvoices"
+          @export-csv="handleExportCsv"
         />
 
         <aside v-if="selectedClient" class="w-full shrink-0 xl:h-full xl:w-[min(30rem,100%)]">
@@ -569,6 +643,7 @@ function logout() {
             @save-invoice="saveInvoice"
             @update-status="handleUpdateStatus"
             @download-pdf="downloadInvoicePdf"
+            @send-email="openEmailModal"
           />
         </aside>
       </div>
@@ -584,6 +659,24 @@ function logout() {
       :submitting="profileSubmitting"
       :error-message="profileError"
       @save="saveProfile"
+      @logo-changed="
+        getLogo()
+          .then((url) => {
+            userLogoDataUrl.value = url
+          })
+          .catch(() => {})
+      "
+    />
+    <EmailModal
+      v-model="showEmailModal"
+      :client-email="clients.find((c) => c.id === emailClientId)?.email ?? ''"
+      :invoice-number="
+        (invoicesByClient[emailClientId] ?? []).find((i) => i.id === selectedInvoiceId)?.number ??
+        ''
+      "
+      :submitting="emailSubmitting"
+      :error-message="emailError"
+      @send="handleSendEmail"
     />
     <BaseModal v-model="showDeleteClientModal" title="Confirmer la suppression">
       <div class="space-y-4">

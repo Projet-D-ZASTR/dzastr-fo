@@ -1,4 +1,4 @@
-import { api } from './api.service'
+import { api, apiDownload } from './api.service'
 
 function toFrontend(c) {
   return {
@@ -41,4 +41,8 @@ export async function updateClient(clientId, { name, email, company, adresse }) 
 
 export async function deleteClient(clientId) {
   await api.delete(`/clients/${clientId}?confirme=true`)
+}
+
+export async function exportClientsCsv() {
+  await apiDownload('/clients/export/csv', 'clients.csv')
 }
