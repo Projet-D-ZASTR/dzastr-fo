@@ -75,7 +75,7 @@ async function request(method, path, payload = undefined) {
   } catch (err) {
     console.error('Network error:', err?.message)
     console.groupEnd()
-    throw new Error('Connexion au service auth impossible.')
+    throw new Error('Connexion au service auth impossible.', { cause: err })
   }
 
   const elapsed = Math.round(performance.now() - t0)

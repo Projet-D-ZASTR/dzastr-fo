@@ -87,7 +87,8 @@ export async function apiRequest(method, path, body = undefined) {
     console.error('→ URL tentée:', fullUrl)
     console.groupEnd()
     throw new Error(
-      'Connexion au serveur impossible. Vérifiez que dzastr-mo tourne et que VITE_MO_API_URL est correct.'
+      'Connexion au serveur impossible. Vérifiez que dzastr-mo tourne et que VITE_MO_API_URL est correct.',
+      { cause: err }
     )
   }
 
