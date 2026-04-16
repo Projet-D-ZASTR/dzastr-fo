@@ -180,13 +180,15 @@ function submit() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M14.74 9l-.346 9m-4.008 0L7.58 9m9.566-3.75H4.454m14.592 0l-.001-1.73a1.5 1.5 0 00-1.356-1.499l-1.102-.16M17.046 5.25H6.954m10.092 0l-1.5-2.25H8.454l-1.5 2.25"
-                />
+                <path d="M3 6h18" />
+                <path d="M8 6V4.5A1.5 1.5 0 019.5 3h5A1.5 1.5 0 0116 4.5V6" />
+                <path d="M19 6l-1 13a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
               </svg>
               Supprimer
             </button>
