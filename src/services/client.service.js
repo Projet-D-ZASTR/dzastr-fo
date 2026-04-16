@@ -12,6 +12,9 @@ function toFrontend(c) {
 
 export async function fetchClients(userId) {
   const data = await api.get('/clients/')
+  if (!Array.isArray(data)) {
+    throw new Error('Format API invalide pour les clients (tableau attendu).')
+  }
   return data.filter((c) => c.User_Id === userId).map(toFrontend)
 }
 
