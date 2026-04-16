@@ -14,13 +14,17 @@ function toFrontend(c) {
 }
 
 export async function fetchClients(userId) {
-  return withCache(`clients:${userId}`, async () => {
-    const data = await api.get('/clients/')
-    if (!Array.isArray(data)) {
-      throw new Error('Format API invalide pour les clients (tableau attendu).')
-    }
-    return data.filter((c) => c.User_Id === userId).map(toFrontend)
-  }, TTL)
+  return withCache(
+    `clients:${userId}`,
+    async () => {
+      const data = await api.get('/clients/')
+      if (!Array.isArray(data)) {
+        throw new Error('Format API invalide pour les clients (tableau attendu).')
+      }
+      return data.filter((c) => c.User_Id === userId).map(toFrontend)
+    },
+    TTL
+  )
 }
 
 export async function createClient(userId, { name, email, company, adresse }) {

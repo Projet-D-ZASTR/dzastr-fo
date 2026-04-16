@@ -112,13 +112,17 @@ function buildFrontendInvoice(raw, services = []) {
 }
 
 export async function fetchInvoices(userId, services = []) {
-  return withCache(`invoices:${userId}`, async () => {
-    const data = await api.get(`/invoices/?User_Id=${userId}`)
-    if (!Array.isArray(data)) {
-      throw new Error('Format API invalide pour les factures (tableau attendu).')
-    }
-    return data.map((invoice) => buildFrontendInvoice(invoice, services))
-  }, TTL)
+  return withCache(
+    `invoices:${userId}`,
+    async () => {
+      const data = await api.get(`/invoices/?User_Id=${userId}`)
+      if (!Array.isArray(data)) {
+        throw new Error('Format API invalide pour les factures (tableau attendu).')
+      }
+      return data.map((invoice) => buildFrontendInvoice(invoice, services))
+    },
+    TTL
+  )
 }
 
 export async function createInvoice({
