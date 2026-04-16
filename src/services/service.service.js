@@ -8,15 +8,25 @@ function toFrontend(s) {
   }
 }
 
-export async function fetchServices() {
+export async function fetchServices(userId) {
   const data = await api.get('/services/')
+  if (userId != null) return data.filter((s) => s.Service_UserId === userId).map(toFrontend)
   return data.map(toFrontend)
 }
 
-export async function createService({ title, hourlyRate }) {
+export async function createService(userId, { title, hourlyRate }) {
   const data = await api.post('/services/', {
-    nom: title,
-    prix_heure: hourlyRate,
+    Service_UserId: userId,
+    Service_Name: title,
+    Service_PriceHour: hourlyRate,
+  })
+  return toFrontend(data)
+}
+
+export async function updateService(serviceId, { title, hourlyRate }) {
+  const data = await api.put(`/services/${serviceId}`, {
+    Service_Name: title,
+    Service_PriceHour: hourlyRate,
   })
   return toFrontend(data)
 }

@@ -19,7 +19,7 @@ FROM nginx:1.27-alpine
 # Template rendered at container startup by nginx entrypoint (envsubst)
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-ENV MO_API_UPSTREAM=dzaster-mo:8000
+ENV MO_API_UPSTREAM=dzaster-mo:8080
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 

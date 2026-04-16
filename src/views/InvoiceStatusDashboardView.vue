@@ -157,7 +157,10 @@ async function loadData() {
     }
     currentUser.value = user
 
-    const [clientsData, services] = await Promise.all([fetchClients(user.User_Id), fetchServices()])
+    const [clientsData, services] = await Promise.all([
+      fetchClients(user.User_Id),
+      fetchServices(user.User_Id),
+    ])
     clients.value = clientsData
     invoices.value = await fetchInvoices(user.User_Id, services)
   } catch (err) {

@@ -75,7 +75,7 @@ async function loadInvoicesPage() {
 
     const [clientsData, servicesData] = await Promise.all([
       fetchClients(user.User_Id),
-      fetchServices(),
+      fetchServices(user.User_Id),
     ])
     const invoicesData = await fetchInvoices(user.User_Id, servicesData)
 

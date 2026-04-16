@@ -12,9 +12,7 @@ function normalizeApiBaseUrl(rawUrl) {
   // URL relative (ex: /mo-api) — on ne la modifie pas
   if (base.startsWith('/')) return base.replace(/\/+$/, '')
   if (!/^https?:\/\//i.test(base)) base = `https://${base}`
-  base = base.replace(/\/+$/, '')
-  if (!base.endsWith('/api')) base = `${base}/api`
-  return base
+  return base.replace(/\/+$/, '')
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL)
