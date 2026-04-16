@@ -1,3 +1,5 @@
+import { cacheClear } from './cache.service'
+
 const DEFAULT_API_BASE_URL = 'http://localhost:8081/api'
 const RAW_API_BASE_URL = import.meta.env.VITE_AUTH_API_URL ?? DEFAULT_API_BASE_URL
 const SERVICE_TOKEN = import.meta.env.VITE_AUTH_SERVICE_TOKEN ?? ''
@@ -125,6 +127,7 @@ export async function registerUser({ fullName, email, password }) {
 }
 
 export function saveAuthSession(accessToken, user) {
+  cacheClear()
   localStorage.setItem(AUTH_TOKEN_KEY, accessToken)
   // User_Id est absent de la réponse HTTP — on le récupère depuis le payload JWT
   const payload = decodeJwtPayload(accessToken)
@@ -136,6 +139,7 @@ export function saveAuthSession(accessToken, user) {
 }
 
 export function clearAuthSession() {
+  cacheClear()
   localStorage.removeItem(AUTH_TOKEN_KEY)
   localStorage.removeItem(AUTH_USER_KEY)
 }
